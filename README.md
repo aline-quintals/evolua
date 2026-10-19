@@ -1,56 +1,205 @@
-# Welcome to your Expo app 👋
+# 🌙 Evolua
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Tecnologia, autocuidado e apoio para a saúde mental.**
 
-## Get started
+> Projeto desenvolvido pela **NubyTech Company Technology**.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## 📌 Sobre o projeto
 
-2. Start the app
+O **Evolua** é uma aplicação digital voltada à promoção da saúde mental, prevenção dos impactos do uso abusivo de álcool e outras substâncias e incentivo ao autocuidado.
 
-   ```bash
-   npx expo start
-   ```
+A plataforma reúne, em um único ambiente:
 
-In the output, you'll find options to open the app in a
+- 🧠 Acompanhamento emocional
+- 🎯 Metas pessoais
+- 📈 Registro e acompanhamento de progresso
+- 📝 Notas pessoais
+- 📚 Conteúdos educativos
+- 🧩 Quizzes informativos
+- 🤝 Informações sobre redes e serviços de apoio
+- 📞 Contatos de confiança
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+O Evolua é uma **ferramenta de apoio e educação em saúde** e não substitui avaliação, diagnóstico ou tratamento realizado por profissionais habilitados.
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 🎯 Problema
 
-When you're ready, run:
+O projeto busca facilitar o acesso à informação, ao acompanhamento do bem-estar emocional e à busca por ajuda relacionada à saúde mental e ao uso de álcool e outras substâncias.
 
-```bash
-npm run reset-project
-```
+Entre os principais desafios estão:
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+- Dificuldade de perceber mudanças no estado emocional;
+- Falta de acompanhamento da própria evolução;
+- Dificuldade para encontrar informações e serviços de apoio;
+- Necessidade de maior acesso à prevenção e educação em saúde.
 
-### Other setup steps
+### 👥 Público-alvo
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+**Público prioritário:** homens adultos entre **30 e 69 anos** que enfrentam dificuldades relacionadas à saúde mental ou ao consumo de álcool e outras substâncias.
 
-## Learn more
+**Públicos complementares:**
 
-To learn more about developing your project with Expo, look at the following resources:
+- Pessoas interessadas em acompanhar o próprio bem-estar;
+- Pessoas que desejam reduzir ou interromper o consumo de substâncias;
+- Familiares e amigos que buscam informações para apoiar alguém;
+- Pessoas interessadas em prevenção, autocuidado e educação em saúde.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 💡 Solução
 
-Join our community of developers creating universal apps.
+O Evolua propõe uma plataforma que permite ao usuário acompanhar seu bem-estar e sua evolução pessoal, além de encontrar informações confiáveis e caminhos para buscar ajuda.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+A proposta inclui:
+
+- Registro de sentimentos e observações;
+- Definição de metas;
+- Acompanhamento de períodos sem consumo;
+- Relatórios pessoais;
+- Conteúdos educativos;
+- Quizzes;
+- Informações sobre serviços de saúde e acolhimento;
+- Cadastro opcional de contatos de confiança.
+
+Recursos como teleatendimento e atendimento emergencial dependerão de implementação, validação técnica, jurídica, operacional e de segurança.
+
+---
+
+## 🛠️ Funcionalidades
+
+| Funcionalidade | Descrição |
+|---|---|
+| Cadastro e login | Criação e acesso à conta |
+| Registro emocional | Registro e acompanhamento dos sentimentos |
+| Notas pessoais | Anotações e reflexões privadas |
+| Metas pessoais | Definição de objetivos |
+| Acompanhamento | Visualização da evolução ao longo do tempo |
+| Períodos sem consumo | Registro de períodos informados pelo usuário |
+| Quizzes | Questionários educativos |
+| Conteúdo educativo | Informações baseadas em fontes confiáveis |
+| Rede de apoio | Informações sobre serviços de saúde e acolhimento |
+| Contatos de confiança | Cadastro opcional de contatos úteis |
+| Relatórios | Resumo de registros, metas e progresso |
+
+As funcionalidades poderão ser ajustadas durante o desenvolvimento e os testes com usuários.
+
+---
+
+## 📊 Fontes de dados
+
+O projeto utiliza como referência fontes públicas e confiáveis:
+
+- **DATASUS** — dados e indicadores de saúde;
+- **OBID** — informações sobre drogas e políticas relacionadas;
+- **IBGE** — dados demográficos e sociais;
+- **OMS** — informações e estatísticas internacionais de saúde.
+
+Antes da publicação de dados ou gráficos, devem ser registradas a fonte, publicação/tabela, período analisado, data de acesso e critérios utilizados.
+
+---
+
+## 💻 Tecnologias
+
+### Front-end
+- **HTML5** — estrutura das páginas
+- **CSS3** — estilos, layout e responsividade
+- **JavaScript** — interações e regras da aplicação
+
+### Back-end
+- **Node.js**
+- **Express**
+- **API REST**
+
+### Banco de dados
+- **MySQL**
+
+### Segurança
+- **bcrypt** — hash de senhas
+- **JWT** — autenticação e autorização
+
+### Ferramentas
+- **Git**
+- **GitHub**
+- **Visual Studio Code**
+- **Google Fonts**
+
+A arquitetura foi planejada para permitir cadastro, autenticação, registros emocionais, metas, quizzes, acompanhamento de progresso e armazenamento dos dados.
+
+---
+
+## 🎨 Identidade visual
+
+### Conceito
+
+O nome **Evolua** representa transformação, continuidade e desenvolvimento pessoal.
+
+A identidade visual utiliza como conceito os **ciclos da lua e suas fases**, simbolizando mudanças graduais e evolução.
+
+### Logo
+
+Logo minimalista com **lua cheia central e fases lunares ao fundo**.
+
+📁 `assets/logo-evolua.jpg`
+
+### 🎨 Paleta de cores
+
+####  Principais
+- Azul Evolua — #4A7BD9
+- Azul Céu — #A7C8FF
+- Azul Gelo — #D7E6FF
+- Lilás — #B79CFF
+- Lavanda — #E7D9FF
+
+#### Secundárias
+- Verde Menta — #A7E8D4
+- Verde Suave — #C8EBD8
+- Turquesa — #7FD3D6
+- Amarelo Pastel — #FFE7A3
+- Pêssego — #FFB88C
+- Rosa Pastel — #FFB6D9
+
+#### ✨ Destaques
+- Azul Profundo — #2E5B9A
+- Roxo Vibrante — #7B61FF
+- Roxo — #A855F7
+- Rosa Vibrante — #FF7EB6
+- Laranja — #FFB347
+- Verde Água — #1BA7A7
+
+#### Neutros e base
+- Azul Marinho — #1E2A44
+- Cinza Grafite — #4B5563
+- Cinza Azulado — #94A3B8
+- Cinza Claro — #E2E8F0
+- Branco — #FFFFFF
+- Branco Azulado — #F7F9FF
+
+### 🔤 Tipografia
+
+- **STIX Two Math** — principal
+- **Average Sans** — secundária
+- **Bebas Neue** — títulos
+- **AXES** — textos e botões
+
+> A disponibilidade, licença e forma de integração das fontes devem ser verificadas antes da implementação.
+
+---
+
+## 🏢 Equipe
+
+**NubyTech Company Technology**
+
+### Projeto
+
+**Evolua — tecnologia, autocuidado e apoio para a saúde mental.**
+
+---
+
+## 🚀 Pitch
+
+O **Evolua** é uma plataforma digital criada para promover a saúde mental, incentivar o autocuidado e prevenir os impactos do uso abusivo de álcool e outras substâncias.
+
+A proposta reúne **acompanhamento emocional, metas, registro de progresso, conteúdos educativos e acesso a informações de apoio** em um único ambiente, tornando o cuidado mais acessível, organizado e acolhedor.
