@@ -38,7 +38,7 @@ Entre os principais desafios estão:
 
 ### 👥 Público-alvo
 
-**Público prioritário:** homens adultos entre **30 e 69 anos** que enfrentam dificuldades relacionadas à saúde mental ou ao consumo de álcool e outras substâncias.
+**Público prioritário:** pessoas do sexo feminino e masculino que enfrentam dificuldades relacionadas à saúde mental ou ao consumo de álcool e outras substâncias.
 
 **Públicos complementares:**
 
