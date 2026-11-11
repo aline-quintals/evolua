@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Animated,
   Easing,
@@ -15,11 +14,13 @@ import Svg, {
   Circle,
   Defs,
   G,
+  LinearGradient as SvgLinearGradient,
   Mask,
   RadialGradient,
   Rect,
   Stop,
 } from 'react-native-svg';
+import { cores, fontes } from '../../tema';
 
 /* ------------------------------------------------------------------ */
 /* Configurações da animação (ajuste aqui se quiser mais rápido/lento) */
@@ -31,16 +32,17 @@ const TEMPO_NUVENS = 1800; // nuvens se abrindo
 
 const NATIVO = Platform.OS !== 'web';
 
-const SERIF = Platform.select({
-  ios: 'Georgia',
-  android: 'serif',
-  default: 'Georgia, "Times New Roman", serif',
-});
-
 /* ------------------------------------------------------------------ */
 /* Estrelas (posições fixas, para não dar diferença entre servidor e   */
 /* navegador)                                                          */
 /* ------------------------------------------------------------------ */
+function corDaEstrela(i: number) {
+  if (i % 4 === 0) return cores.amareloPastel;
+  if (i % 5 === 0) return cores.rosaPastel;
+  if (i % 7 === 0) return cores.verdeMenta;
+  return cores.branco;
+}
+
 function gerarEstrelas() {
   let s = 12345;
   const rnd = () => {
@@ -49,13 +51,14 @@ function gerarEstrelas() {
   };
   const arred = (n: number) => Math.round(n * 10) / 10;
 
-  return Array.from({ length: 36 }, (_, i) => ({
+  return Array.from({ length: 60 }, (_, i) => ({
     id: i,
     x: arred(3 + rnd() * 94),
     y: arred(3 + rnd() * 58),
     tamanho: arred(1.5 + rnd() * 2.5),
     atraso: Math.floor(rnd() * 2500),
     duracao: 700 + Math.floor(rnd() * 1100),
+    cor: corDaEstrela(i),
   }));
 }
 
@@ -67,9 +70,10 @@ type EstrelaProps = {
   tamanho: number;
   atraso: number;
   duracao: number;
+  cor: string;
 };
 
-function Estrela({ x, y, tamanho, atraso, duracao }: EstrelaProps) {
+function Estrela({ x, y, tamanho, atraso, duracao, cor }: EstrelaProps) {
   const brilho = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -107,7 +111,7 @@ function Estrela({ x, y, tamanho, atraso, duracao }: EstrelaProps) {
         width: tamanho,
         height: tamanho,
         borderRadius: tamanho / 2,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: cor,
         opacity: brilho.interpolate({
           inputRange: [0, 1],
           outputRange: [0.15, 1],
@@ -204,8 +208,8 @@ function Lua({ progresso }: { progresso: Animated.Value }) {
     <Svg width={150} height={150} viewBox="0 0 160 160">
       <Defs>
         <RadialGradient id="luaGrad" cx="38%" cy="35%" r="75%">
-          <Stop offset="0" stopColor="#FFFFFF" />
-          <Stop offset="1" stopColor="#C6D6EC" />
+          <Stop offset="0" stopColor={cores.branco} />
+          <Stop offset="1" stopColor={cores.azulGelo} />
         </RadialGradient>
         <Mask
           id="sombra"
@@ -221,49 +225,98 @@ function Lua({ progresso }: { progresso: Animated.Value }) {
       </Defs>
 
       {/* Halo suave e contorno da lua apagada */}
-      <Circle cx="80" cy="80" r="74" fill="#FFFFFF" opacity={0.06} />
-      <Circle cx="80" cy="80" r="60" fill="#FFFFFF" opacity={0.1} />
+      <Circle cx="80" cy="80" r="74" fill={cores.branco} opacity={0.06} />
+      <Circle cx="80" cy="80" r="60" fill={cores.branco} opacity={0.1} />
 
       {/* Parte iluminada */}
       <G mask="url(#sombra)">
         <Circle cx="80" cy="80" r="60" fill="url(#luaGrad)" />
-        <Circle cx="62" cy="70" r="9" fill="#AFC2DD" opacity={0.35} />
-        <Circle cx="95" cy="100" r="12" fill="#AFC2DD" opacity={0.3} />
-        <Circle cx="80" cy="52" r="6" fill="#AFC2DD" opacity={0.3} />
-        <Circle cx="102" cy="68" r="5" fill="#AFC2DD" opacity={0.3} />
-        <Circle cx="66" cy="104" r="7" fill="#AFC2DD" opacity={0.3} />
+        <Circle cx="62" cy="70" r="9" fill={cores.azulCeu} opacity={0.35} />
+        <Circle cx="95" cy="100" r="12" fill={cores.azulCeu} opacity={0.3} />
+        <Circle cx="80" cy="52" r="6" fill={cores.azulCeu} opacity={0.3} />
+        <Circle cx="102" cy="68" r="5" fill={cores.azulCeu} opacity={0.3} />
+        <Circle cx="66" cy="104" r="7" fill={cores.azulCeu} opacity={0.3} />
       </G>
     </Svg>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Nuvens: dois bancos que se abrem para os lados                       */
+/* Nuvens: bancos fofos (3 camadas cada) que se abrem para os lados     */
 /* ------------------------------------------------------------------ */
-type Bola = { cx: number; cy: number; r: number; o: number };
+type Bola = { cx: number; cy: number; r: number };
+type Camada = { opacidade: number; bolas: Bola[] };
 
-const NUVEM_ESQ: Bola[] = [
-  { cx: 70, cy: 150, r: 110, o: 0.35 },
-  { cx: 190, cy: 120, r: 80, o: 0.35 },
-  { cx: 110, cy: 200, r: 100, o: 0.6 },
-  { cx: 30, cy: 230, r: 90, o: 0.6 },
-  { cx: 60, cy: 290, r: 80, o: 0.92 },
-  { cx: 160, cy: 275, r: 95, o: 0.92 },
-  { cx: 250, cy: 300, r: 75, o: 0.92 },
+const CAMADAS_ESQ: Camada[] = [
+  {
+    opacidade: 0.45,
+    bolas: [
+      { cx: 60, cy: 175, r: 72 },
+      { cx: 150, cy: 150, r: 58 },
+      { cx: 235, cy: 185, r: 62 },
+      { cx: 15, cy: 215, r: 55 },
+    ],
+  },
+  {
+    opacidade: 0.75,
+    bolas: [
+      { cx: 35, cy: 245, r: 66 },
+      { cx: 115, cy: 218, r: 60 },
+      { cx: 195, cy: 238, r: 56 },
+      { cx: 268, cy: 262, r: 48 },
+    ],
+  },
+  {
+    opacidade: 0.97,
+    bolas: [
+      { cx: 15, cy: 305, r: 62 },
+      { cx: 85, cy: 282, r: 50 },
+      { cx: 150, cy: 300, r: 58 },
+      { cx: 222, cy: 292, r: 46 },
+      { cx: 285, cy: 312, r: 44 },
+      { cx: 55, cy: 262, r: 34 },
+      { cx: 128, cy: 268, r: 32 },
+      { cx: 190, cy: 268, r: 30 },
+    ],
+  },
 ];
 
-const NUVEM_DIR: Bola[] = [
-  { cx: 230, cy: 140, r: 105, o: 0.35 },
-  { cx: 110, cy: 115, r: 75, o: 0.35 },
-  { cx: 190, cy: 205, r: 100, o: 0.6 },
-  { cx: 275, cy: 240, r: 85, o: 0.6 },
-  { cx: 240, cy: 290, r: 80, o: 0.92 },
-  { cx: 140, cy: 280, r: 95, o: 0.92 },
-  { cx: 50, cy: 305, r: 75, o: 0.92 },
+const CAMADAS_DIR: Camada[] = [
+  {
+    opacidade: 0.45,
+    bolas: [
+      { cx: 240, cy: 170, r: 70 },
+      { cx: 150, cy: 148, r: 60 },
+      { cx: 65, cy: 190, r: 60 },
+      { cx: 285, cy: 212, r: 55 },
+    ],
+  },
+  {
+    opacidade: 0.75,
+    bolas: [
+      { cx: 262, cy: 248, r: 64 },
+      { cx: 182, cy: 220, r: 60 },
+      { cx: 105, cy: 240, r: 56 },
+      { cx: 32, cy: 265, r: 46 },
+    ],
+  },
+  {
+    opacidade: 0.97,
+    bolas: [
+      { cx: 285, cy: 305, r: 60 },
+      { cx: 212, cy: 284, r: 52 },
+      { cx: 148, cy: 302, r: 56 },
+      { cx: 78, cy: 294, r: 48 },
+      { cx: 15, cy: 312, r: 44 },
+      { cx: 245, cy: 262, r: 34 },
+      { cx: 172, cy: 270, r: 32 },
+      { cx: 110, cy: 270, r: 30 },
+    ],
+  },
 ];
 
 function BancoNuvens({ lado }: { lado: 'esq' | 'dir' }) {
-  const bolas = lado === 'esq' ? NUVEM_ESQ : NUVEM_DIR;
+  const camadas = lado === 'esq' ? CAMADAS_ESQ : CAMADAS_DIR;
   const idGrad = `nuvemGrad-${lado}`;
 
   return (
@@ -274,24 +327,33 @@ function BancoNuvens({ lado }: { lado: 'esq' | 'dir' }) {
       preserveAspectRatio="xMidYMax meet"
     >
       <Defs>
-        <RadialGradient id={idGrad} cx="50%" cy="40%" r="65%">
-          <Stop offset="0" stopColor="#FFFFFF" />
-          <Stop offset="1" stopColor="#D3E3F5" />
-        </RadialGradient>
+        {/* Branco em cima, descendo para um azul-gelo (dá volume à nuvem) */}
+        <SvgLinearGradient
+          id={idGrad}
+          gradientUnits="userSpaceOnUse"
+          x1="0"
+          y1="110"
+          x2="0"
+          y2="330"
+        >
+          <Stop offset="0" stopColor={cores.branco} />
+          <Stop offset="0.55" stopColor={cores.brancoAzulado} />
+          <Stop offset="1" stopColor={cores.azulGelo} />
+        </SvgLinearGradient>
       </Defs>
 
-      {bolas.map((b, i) => (
-        <Circle
-          key={i}
-          cx={b.cx}
-          cy={b.cy}
-          r={b.r}
-          fill={`url(#${idGrad})`}
-          fillOpacity={b.o}
-          stroke="#C5D9EE"
-          strokeOpacity={0.5}
-          strokeWidth={2}
-        />
+      {camadas.map((camada, i) => (
+        <G key={i} opacity={camada.opacidade}>
+          {camada.bolas.map((b, j) => (
+            <Circle
+              key={j}
+              cx={b.cx}
+              cy={b.cy}
+              r={b.r}
+              fill={`url(#${idGrad})`}
+            />
+          ))}
+        </G>
       ))}
     </Svg>
   );
@@ -303,7 +365,22 @@ function BancoNuvens({ lado }: { lado: 'esq' | 'dir' }) {
 export default function Abertura() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+
+  // Coluna central (lua + nome): no celular ocupa a tela toda;
+  // no navegador, em janela larga, fica centralizada com até 480 px.
   const largura = Math.min(width, 480);
+  const margem = (width - largura) / 2;
+
+  // Estrelas: mais estrelas quando a janela é larga
+  const estrelas = width > 700 ? ESTRELAS : ESTRELAS.slice(0, 36);
+
+  // Nuvens: cada pedaço tem tamanho fixo; em janela larga repetimos
+  // os pedaços para cobrir o céu inteiro.
+  const bancoLargura = largura * 0.75;
+  const passo = bancoLargura * 0.88; // um pedaço entra um pouco no outro
+  const copias = Math.max(1, Math.ceil((width * 0.55) / passo));
+  const grupoLargura = bancoLargura + (copias - 1) * passo;
+  const saida = grupoLargura * 1.4; // quanto cada lado anda para sair da tela
 
   const fase = useRef(new Animated.Value(0)).current; // lua
   const titulo = useRef(new Animated.Value(0)).current; // nome + linhas
@@ -347,11 +424,11 @@ export default function Abertura() {
   // Nuvens abrindo para os lados, chegando mais perto
   const nuvemEsqX = abrir.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -largura * 0.9],
+    outputRange: [0, -saida],
   });
   const nuvemDirX = abrir.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, largura * 0.9],
+    outputRange: [0, saida],
   });
   const nuvemY = abrir.interpolate({
     inputRange: [0, 1],
@@ -380,15 +457,15 @@ export default function Abertura() {
 
   return (
     <LinearGradient
-      colors={['#4F7CBD', '#7FA6DC', '#A7C5EB', '#8CB1E2']}
-      locations={[0, 0.35, 0.6, 1]}
+      colors={[cores.azulProfundo, cores.azulEvolua, cores.azulCeu, cores.lavanda]}
+      locations={[0, 0.35, 0.65, 1]}
       style={styles.fundo}
     >
       <StatusBar hidden />
 
       <View style={styles.palco}>
-        {/* Estrelas piscando */}
-        {ESTRELAS.map((e) => (
+        {/* Estrelas piscando (céu inteiro) */}
+        {estrelas.map((e) => (
           <Estrela
             key={e.id}
             x={e.x}
@@ -396,57 +473,61 @@ export default function Abertura() {
             tamanho={e.tamanho}
             atraso={e.atraso}
             duracao={e.duracao}
+            cor={e.cor}
           />
         ))}
 
-        {/* Lua + nome */}
-        <Animated.View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              opacity: centroOpacidade,
-              transform: [{ scale: centroEscala }],
-            },
-          ]}
-        >
-          <View style={styles.luaBox}>
-            <Lua progresso={fase} />
-          </View>
-
-          <Animated.Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
+        {/* Coluna central: lua + nome */}
+        <View style={[styles.centro, { width: largura, left: margem }]}>
+          <Animated.View
             style={[
-              styles.titulo,
-              { opacity: titulo, transform: [{ translateY: tituloY }] },
+              StyleSheet.absoluteFill,
+              {
+                opacity: centroOpacidade,
+                transform: [{ scale: centroEscala }],
+              },
             ]}
           >
-            EVOLUA
-          </Animated.Text>
+            <View style={styles.luaBox}>
+              <Lua progresso={fase} />
+            </View>
 
-          <Animated.View
-            style={[StyleSheet.absoluteFill, { opacity: titulo }]}
-          >
-            <View style={styles.linhaC} />
-            <View style={styles.linhaB} />
-            <View style={styles.linhaA}>
-              <View style={[styles.ponto, { width: 7, height: 7 }]} />
-              <View style={[styles.ponto, { width: 10, height: 10 }]} />
-              <View style={[styles.ponto, { width: 10, height: 10 }]} />
-              <View style={styles.linhaAtraco} />
-            </View>
-            <View style={styles.brilhoBox}>
-              <Brilho />
-            </View>
+            <Animated.Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={[
+                styles.titulo,
+                { opacity: titulo, transform: [{ translateY: tituloY }] },
+              ]}
+            >
+              EVOLUA
+            </Animated.Text>
+
+            <Animated.View
+              style={[StyleSheet.absoluteFill, { opacity: titulo }]}
+            >
+              <View style={styles.linhaC} />
+              <View style={styles.linhaB} />
+              <View style={styles.linhaA}>
+                <View style={[styles.ponto, { width: 7, height: 7 }]} />
+                <View style={[styles.ponto, { width: 10, height: 10 }]} />
+                <View style={[styles.ponto, { width: 10, height: 10 }]} />
+                <View style={styles.linhaAtraco} />
+              </View>
+              <View style={styles.brilhoBox}>
+                <Brilho />
+              </View>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
+        </View>
 
-        {/* Nuvens (abrem para os lados no final) */}
+        {/* Nuvens da esquerda (abrem para a esquerda no final) */}
         <Animated.View
           style={[
-            styles.banco,
-            styles.bancoEsq,
+            styles.grupoNuvens,
             {
+              left: -bancoLargura * 0.1,
+              width: grupoLargura,
               transform: [
                 { translateX: nuvemEsqX },
                 { translateY: nuvemY },
@@ -455,14 +536,26 @@ export default function Abertura() {
             },
           ]}
         >
-          <BancoNuvens lado="esq" />
+          {Array.from({ length: copias }, (_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.pedacoNuvem,
+                { width: bancoLargura, left: i * passo },
+              ]}
+            >
+              <BancoNuvens lado="esq" />
+            </View>
+          ))}
         </Animated.View>
 
+        {/* Nuvens da direita (abrem para a direita no final) */}
         <Animated.View
           style={[
-            styles.banco,
-            styles.bancoDir,
+            styles.grupoNuvens,
             {
+              right: -bancoLargura * 0.1,
+              width: grupoLargura,
               transform: [
                 { translateX: nuvemDirX },
                 { translateY: nuvemY },
@@ -471,7 +564,17 @@ export default function Abertura() {
             },
           ]}
         >
-          <BancoNuvens lado="dir" />
+          {Array.from({ length: copias }, (_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.pedacoNuvem,
+                { width: bancoLargura, right: i * passo },
+              ]}
+            >
+              <BancoNuvens lado="dir" />
+            </View>
+          ))}
         </Animated.View>
       </View>
     </LinearGradient>
@@ -483,12 +586,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  // Céu inteiro (sem limite de largura)
   palco: {
     flex: 1,
     width: '100%',
-    maxWidth: 480,
-    alignSelf: 'center',
     overflow: 'hidden',
+  },
+
+  // Coluna central onde ficam a lua e o nome
+  centro: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
   },
 
   luaBox: {
@@ -501,14 +610,14 @@ const styles = StyleSheet.create({
 
   titulo: {
     position: 'absolute',
-    left: '36%',
+    left: '41%',
     top: '44%',
-    width: '62%',
-    fontSize: 46,
-    color: '#FFFFFF',
-    fontFamily: SERIF,
-    letterSpacing: 1,
-    textShadowColor: 'rgba(40, 80, 140, 0.35)',
+    width: '57%',
+    fontSize: 44,
+    color: cores.branco,
+    fontFamily: fontes.titulo,
+    letterSpacing: 2,
+    textShadowColor: 'rgba(46, 91, 154, 0.45)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },
@@ -524,17 +633,17 @@ const styles = StyleSheet.create({
   },
   ponto: {
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: cores.branco,
     marginRight: 3,
   },
   linhaAtraco: {
     flex: 1,
     height: 1.5,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: cores.branco,
   },
   linhaB: {
     position: 'absolute',
-    left: '52%',
+    left: '56%',
     right: '6%',
     top: '51.2%',
     height: 1,
@@ -556,23 +665,21 @@ const styles = StyleSheet.create({
   },
   brilho: {
     fontSize: 34,
-    color: '#FFFFFF',
+    color: cores.branco,
     textShadowColor: 'rgba(255, 255, 255, 0.9)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
   },
 
   // Nuvens
-  banco: {
+  grupoNuvens: {
     position: 'absolute',
     bottom: -24,
-    width: '75%',
     height: '42%',
   },
-  bancoEsq: {
-    left: '-10%',
-  },
-  bancoDir: {
-    right: '-10%',
+  pedacoNuvem: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
   },
 });
