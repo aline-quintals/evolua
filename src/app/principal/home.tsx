@@ -1,52 +1,82 @@
 /* =============================================================================
- * home.txt — MÓDULO HOME DO PROJETO EVOLUA (React + TypeScript, arquivo único)
+ * src/app/principal/home.tsx — MÓDULO HOME DO PROJETO EVOLUA
+ * (React Native + Expo Router + TypeScript, arquivo único)
  * =============================================================================
  *
- * CONTEÚDO DESTE ARQUIVO (na ordem em que aparece):
- *   1.  Imports e dependências
+ * ESTE ARQUIVO CONTÉM, NESTA ORDEM:
+ *   1.  Imports
  *   2.  Tipos e interfaces
- *   3.  Tokens de design (cores/fontes) e estilos CSS do módulo
- *   4.  Dados compartilhados (estado central, reducer, contexto, hooks)
+ *   3.  Tokens de design (cores e fontes)
+ *   4.  Dados compartilhados (store central + hooks exportados)
  *   5.  Pontos de integração com o BACKEND (serviços)
  *   6.  Funções auxiliares
- *   7.  Ícones (SVG inline)
- *   8.  Componentes base (Avatar, Cabeçalho, Menu de Navegação, Placeholder)
- *   9.  Página Home (+ carrossel de atividades)
- *  10.  Componente de Check-in Emocional
- *  11.  Página Meu Perfil
- *  12.  Página Configurações
- *  13.  Página Notificações
- *  14.  Componente raiz do módulo (ModuloHome) e exports
+ *   7.  Rotas das atividades (pontos de integração com outras páginas)
+ *   8.  Componentes base (Avatar, Cabeçalho, Menu Inferior)
+ *   9.  Deslizador discreto (usado no Check-in)
+ *  10.  Check-in Emocional
+ *  11.  Tela Home
+ *  12.  Tela Meu Perfil
+ *  13.  Tela Configurações
+ *  14.  Tela Notificações
+ *  15.  Componente da rota (export default)
  *
- * COMO USAR (para quem for integrar):
- *   - Este arquivo exporta por padrão o componente <ModuloHome />. Ele já traz
- *     seu próprio provedor de estado, roteamento interno e menu inferior.
- *   - Páginas de outros colaboradores entram pela prop `paginasExternas`
- *     (veja a seção 14 e a constante ROTAS_EXTERNAS na seção 2).
- *   - Dados reais (usuário, notificações, check-ins) entram pelas props
- *     `usuarioInicial`, `notificacoesIniciais` e `checkinsIniciais`.
- *   - Eventos importantes saem pelas props `onCheckinSalvo`, `onPerfilAtualizado`,
- *     `onNotificacoesAlteradas`, `onNavegarExterno` e `onLogout`.
- *   - Tudo que depende de backend (códigos de verificação, troca de senha,
- *     recuperação de conta, logout) passa pelo objeto `ServicosBackend`
- *     (seção 5). A implementação padrão NÃO simula nada: devolve
- *     "backend não conectado". Basta passar a prop `servicos` com a real.
- *   - Nenhum dado é salvo em banco, localStorage ou servidor por este arquivo.
- *     Tudo vive em memória (estado do React) até o backend ser conectado.
+ * ---------------------------------------------------------------------------
+ * PÁGINA DE ENTRADA DO APP  (comentário pedido na especificação)
+ * ---------------------------------------------------------------------------
+ * O app abre em src/app/index.tsx, que faz <Redirect href="/acesso/abertura" />.
+ * >>> É LÁ (em src/app/index.tsx / telas de src/app/acesso/) que devem ser
+ * >>> ADICIONADAS AS PÁGINAS DE INICIALIZAÇÃO DO APP (abertura, login etc.).
+ * Este arquivo só cuida do que acontece DEPOIS do login (rota /principal/home).
+ * Sugestão: cole o comentário acima também em src/app/index.tsx.
  *
- * FONTES (conforme definido pela equipe de design):
- *   principal: STIX Two Math | secundária: Average Sans | títulos: Bebas Neue
- *   textos e botões: AXES
- *   OBS.: "AXES" não está no Google Fonts. O arquivo da fonte precisa ser
- *   fornecido pelo projeto (veja o @font-face na seção 3). Enquanto isso, o
- *   navegador usa a fonte sans-serif padrão do sistema.
+ * ---------------------------------------------------------------------------
+ * COMO ESTA TELA SE ENCAIXA NO ROUTER
+ * ---------------------------------------------------------------------------
+ * - Rota: /principal/home. Perfil, Configurações e Notificações são TELAS
+ *   INTERNAS deste arquivo (trocadas por estado), para manter tudo em um só
+ *   arquivo. O menu inferior continua visível em todas, como no design.
+ * - Os 5 botões do menu navegam com expo-router para:
+ *     /principal/home, /principal/evolua, /principal/chat,
+ *     /principal/progresso, /principal/saiba-mais.
+ * - MENU INFERIOR: este arquivo desenha o menu (componente <MenuInferior />,
+ *   exportado). Para não aparecer DUAS barras, no src/app/principal/_layout.tsx
+ *   esconda a barra padrão das Tabs (ex.: <Tabs tabBar={() => null} /> ou
+ *   tabBarStyle: { display: 'none' }) e renderize <MenuInferior ativo="evolua" />
+ *   no fim das telas dos colegas — OU use <MenuInferior /> como `tabBar`
+ *   customizada. Quem fizer o _layout decide; o componente funciona nos dois casos.
+ *
+ * ---------------------------------------------------------------------------
+ * DADOS COMPARTILHADOS COM OUTRAS TELAS
+ * ---------------------------------------------------------------------------
+ * O estado (perfil, check-ins, notificações) vive em um store de módulo, FORA
+ * da árvore React. Qualquer arquivo do projeto pode importar:
+ *     import { useCheckins, useEvolua } from './home';
+ * sem precisar de Provider. Veja a seção 4.
+ *
+ * ---------------------------------------------------------------------------
+ * DEPENDÊNCIAS
+ * ---------------------------------------------------------------------------
+ * Já presentes no package.json: expo-router, react-native-svg, expo-linear-gradient,
+ * expo-image, @expo/vector-icons, react-native-safe-area-context.
+ * NÃO presente (precisa instalar pelo integrador):
+ *     npx expo install expo-image-picker      ← usada na troca de foto
+ *
+ * ---------------------------------------------------------------------------
+ * FONTES (nomes de família usados neste arquivo, ver FONTES na seção 3)
+ * ---------------------------------------------------------------------------
+ *   principal: 'StixTwoMath' | secundária: 'AverageSans' | títulos: 'BebasNeue'
+ *   textos e botões: 'AXES'
+ * Este arquivo NÃO carrega fontes. Carregue-as uma vez no layout raiz com
+ * expo-font, registrando exatamente estes nomes, por exemplo:
+ *     useFonts({ StixTwoMath: require('...'), AverageSans: require('...'),
+ *                BebasNeue: require('...'), AXES: require('...') })
+ * Enquanto não carregadas, o sistema usa a fonte padrão.
  *
  * Este código não foi executado, compilado nem testado.
  * ========================================================================== */
 
 /* =============================================================================
- * 1. IMPORTS E DEPENDÊNCIAS
- * Somente React. Nenhuma biblioteca externa é necessária.
+ * 1. IMPORTS
  * ========================================================================== */
 import React, {
   createContext,
@@ -54,197 +84,128 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useReducer,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
+import {
+  Alert,
+  Animated,
+  BackHandler,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  PanResponder,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { router, type Href } from 'expo-router';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 
 /* =============================================================================
  * 2. TIPOS E INTERFACES
  * ========================================================================== */
 
-/** Gêneros aceitos nas Configurações. */
 export type Genero = 'homem' | 'mulher' | 'outro' | 'nao_informar';
 
-/**
- * Dados do usuário compartilhados por Home, Perfil, Configurações e Notificações.
- * Fonte única da verdade: qualquer alteração aqui reflete em todas as páginas.
- */
+/** Dados do usuário. Fonte única da verdade para Home, Perfil, Configurações e Notificações. */
 export interface PerfilUsuario {
-  id: string;                    // identificador do usuário (vem do backend)
+  id: string;                    // id do usuário (vem do backend após o login)
   nome: string;
   sobrenome: string;
-  apelido: string;               // usado na saudação "Olá, [apelido]!"
-  fotoUrl: string | null;        // data URL (local) ou URL do backend; null = avatar padrão
+  apelido: string;               // usado em "Olá, [apelido]!"
+  fotoUrl: string | null;        // uri local ou URL do backend; null = avatar padrão
   biografia: string;
-  dataNascimento: string | null; // formato ISO "AAAA-MM-DD"; null = não informada
+  dataNascimento: string | null; // ISO "AAAA-MM-DD"
   genero: Genero;
-  contato: {
-    email: string;
-    telefone: string;
-  };
+  contato: { email: string; telefone: string };
 }
 
-/** Chaves das 5 emoções do check-in (da mais positiva para a mais negativa). */
 export type EmocaoChave = 'muito_feliz' | 'feliz' | 'neutro' | 'triste' | 'muito_triste';
 
-/**
- * Um registro de check-in emocional salvo pelo botão "Salvar o meu dia".
- * É ESTE o formato que a página de histórico deve consumir.
- */
+/** Registro de um check-in emocional (ver o guia na seção 4). */
 export interface RegistroCheckin {
-  id: string;            // identificador único do registro (use como chave no histórico)
-  usuarioId: string;     // dono do registro (PerfilUsuario.id)
-  criadoEmISO: string;   // instante exato do salvamento, ex.: "2025-03-10T14:32:05.123Z"
-  dataLocal: string;     // dia no fuso do usuário "AAAA-MM-DD" — use para agrupar por dia
+  id: string;
+  usuarioId: string;
+  criadoEmISO: string;  // instante exato, ex.: "2025-03-10T14:32:05.123Z"
+  dataLocal: string;    // dia no fuso do usuário "AAAA-MM-DD" (agrupar por dia)
   emocao: EmocaoChave;
-  emocaoNivel: 1 | 2 | 3 | 4 | 5; // 5 = muito feliz ... 1 = muito triste (bom para gráficos)
-  ansiedade: number;     // 1 a 10
-  estresse: number;      // 1 a 10
-  energia: number;       // 1 a 10
+  emocaoNivel: 1 | 2 | 3 | 4 | 5; // 5 = muito feliz ... 1 = muito triste
+  ansiedade: number;    // 1 a 10
+  estresse: number;     // 1 a 10
+  energia: number;      // 1 a 10
 }
 
-/** Estados possíveis de uma notificação. Define em qual aba ela aparece. */
 export type StatusNotificacao = 'nao_lida' | 'lida' | 'arquivada';
 
-/** Notificação exibida na página Notificações. */
 export interface Notificacao {
   id: string;
   titulo: string;
-  mensagem: string;          // texto completo (a prévia é cortada com reticências via CSS)
-  dataISO?: string;          // opcional; quando ausente, nenhuma data é exibida
+  mensagem: string;
+  dataISO?: string;     // opcional
   status: StatusNotificacao;
 }
 
-/** Abas da página Notificações (cada uma corresponde a um StatusNotificacao). */
-export type AbaNotificacoes = 'nao_lida' | 'lida' | 'arquivada';
-
-/** Preferências necessárias às páginas deste módulo. */
-export interface Preferencias {
-  idioma: 'pt-BR';
-  abaNotificacoesInicial: AbaNotificacoes; // aba aberta ao entrar em Notificações
+export interface EstadoEvolua {
+  perfil: PerfilUsuario;
+  checkins: RegistroCheckin[];      // mais recente primeiro
+  notificacoes: Notificacao[];
+  preferencias: { idioma: 'pt-BR' };
 }
 
-/** Rotas internas deste módulo. */
-export type RotaInterna = 'home' | 'perfil' | 'configuracoes' | 'notificacoes';
+/** Telas internas deste arquivo. */
+type TelaInterna = 'home' | 'perfil' | 'configuracoes' | 'notificacoes';
 
-/**
- * Rotas que pertencem a OUTROS colaboradores. Este módulo só sabe o "id".
- * - evolua / chat / progresso / saibaMais  → botões do menu inferior
- * - evolucaoPessoal / questionarios / metas / exercicios / historicoCheckin
- *                                           → cartões de atividades (Home e Perfil)
- */
-export const ROTAS_EXTERNAS = [
-  'evolua',
-  'chat',
-  'progresso',
-  'saibaMais',
-  'evolucaoPessoal',
-  'questionarios',
-  'metas',
-  'exercicios',
-  'historicoCheckin',
-] as const;
-export type RotaExterna = (typeof ROTAS_EXTERNAS)[number];
-
-export type Rota = RotaInterna | RotaExterna;
-
-/** Props que toda página externa recebe ao ser plugada no módulo. */
-export interface PropsPaginaExterna {
-  rota: RotaExterna;
-  irPara: (rota: Rota) => void;
-}
-
-/** Resultado padrão das chamadas de backend. */
 export interface ResultadoServico {
   ok: boolean;
   mensagem?: string;
-  /** true quando o serviço ainda não foi conectado (implementação padrão). */
-  naoConectado?: boolean;
+  naoConectado?: boolean; // true na implementação padrão (nada foi simulado)
 }
 
-/** Contrato dos serviços que dependem de backend (implementar na integração). */
+/** Contrato dos serviços que dependem de backend (seção 5). */
 export interface ServicosBackend {
-  /** Envia código de verificação para o NOVO e-mail/telefone solicitado. */
-  solicitarCodigoAlteracaoContato(dados: { tipo: 'email' | 'telefone'; novoValor: string }): Promise<ResultadoServico>;
-  /** Confirma o código recebido e efetiva a troca do contato. */
-  confirmarAlteracaoContato(dados: { tipo: 'email' | 'telefone'; novoValor: string; codigo: string }): Promise<ResultadoServico>;
-  /** Troca de senha de usuário autenticado (valida senha atual no servidor). */
-  alterarSenha(dados: { senhaAtual: string; novaSenha: string }): Promise<ResultadoServico>;
-  /** Passo 1 da recuperação: envia código por e-mail ou telefone cadastrados. */
-  solicitarCodigoRecuperacao(dados: { canal: 'email' | 'telefone' }): Promise<ResultadoServico>;
-  /** Passo 2 da recuperação: valida o código e define a nova senha. */
-  confirmarRecuperacaoSenha(dados: { codigo: string; novaSenha: string }): Promise<ResultadoServico>;
-  /** Encerra a sessão autenticada. */
+  solicitarCodigoAlteracaoContato(d: { tipo: 'email' | 'telefone'; novoValor: string }): Promise<ResultadoServico>;
+  confirmarAlteracaoContato(d: { tipo: 'email' | 'telefone'; novoValor: string; codigo: string }): Promise<ResultadoServico>;
+  alterarSenha(d: { senhaAtual: string; novaSenha: string }): Promise<ResultadoServico>;
+  solicitarCodigoRecuperacao(d: { canal: 'email' | 'telefone' }): Promise<ResultadoServico>;
+  confirmarRecuperacaoSenha(d: { codigo: string; novaSenha: string }): Promise<ResultadoServico>;
   encerrarSessao(): Promise<ResultadoServico>;
 }
 
-/** Props do componente raiz do módulo (pontos de integração). */
-export interface PropsModuloHome {
-  usuarioInicial?: Partial<PerfilUsuario>;
-  notificacoesIniciais?: Notificacao[];
-  checkinsIniciais?: RegistroCheckin[];
-  preferenciasIniciais?: Partial<Preferencias>;
-  /** Páginas dos outros colaboradores, indexadas pelo id da rota. */
-  paginasExternas?: Partial<Record<RotaExterna, React.ComponentType<PropsPaginaExterna>>>;
-  /** Substitui os serviços de backend padrão (que não simulam nada). */
-  servicos?: ServicosBackend;
-  /** Chamado após cada check-in salvo. Aqui o backend pode persistir o registro. */
-  onCheckinSalvo?: (registro: RegistroCheckin) => void;
-  /** Chamado sempre que o perfil muda (nome, apelido, foto, biografia etc.). */
-  onPerfilAtualizado?: (perfil: PerfilUsuario) => void;
-  /** Chamado sempre que o status de alguma notificação muda. */
-  onNotificacoesAlteradas?: (notificacoes: Notificacao[]) => void;
-  /** Chamado quando o usuário abre uma rota externa (útil para o roteador do app). */
-  onNavegarExterno?: (rota: RotaExterna) => void;
-  /** Chamado depois que o serviço encerrarSessao() retornar ok. */
-  onLogout?: () => void;
-  /** Rota inicial do módulo (padrão: 'home'). */
-  rotaInicial?: Rota;
-}
-
 /* =============================================================================
- * 3. TOKENS DE DESIGN E ESTILOS
- * Cores e fontes seguem exatamente a paleta do PDF de referência.
+ * 3. TOKENS DE DESIGN
  * ========================================================================== */
 
 export const CORES = {
-  azulEvolua: '#4A7BD9',
-  azulCeu: '#A7C8FF',
-  azulGelo: '#D7E6FF',
-  lilas: '#B79CFF',
-  lavanda: '#E7D9FF',
-  verdeMenta: '#A7E8D4',
-  verdeSuave: '#C8EBD8',
-  turquesa: '#7FD3D6',
-  amareloPastel: '#FFE7A3',
-  pessego: '#FFB88C',
-  rosaPastel: '#FFB6D9',
-  azulProfundo: '#2E5B9A',
-  roxoVibrante: '#7B61FF',
-  roxo: '#A855F7',
-  rosaVibrante: '#FF7EB6',
-  laranja: '#FFB347',
-  verdeAgua: '#1BA7A7',
-  azulMarinho: '#1E2A44',
-  cinzaGrafite: '#4B5563',
-  cinzaAzulado: '#94A3B8',
-  cinzaClaro: '#E2E8F0',
-  branco: '#FFFFFF',
-  brancoAzulado: '#F7F9FF',
+  azulEvolua: '#4A7BD9', azulCeu: '#A7C8FF', azulGelo: '#D7E6FF', lilas: '#B79CFF', lavanda: '#E7D9FF',
+  verdeMenta: '#A7E8D4', verdeSuave: '#C8EBD8', turquesa: '#7FD3D6', amareloPastel: '#FFE7A3',
+  pessego: '#FFB88C', rosaPastel: '#FFB6D9',
+  azulProfundo: '#2E5B9A', roxoVibrante: '#7B61FF', roxo: '#A855F7', rosaVibrante: '#FF7EB6',
+  laranja: '#FFB347', verdeAgua: '#1BA7A7',
+  azulMarinho: '#1E2A44', cinzaGrafite: '#4B5563', cinzaAzulado: '#94A3B8', cinzaClaro: '#E2E8F0',
+  branco: '#FFFFFF', brancoAzulado: '#F7F9FF',
 } as const;
 
-/**
- * Definição das 5 emoções. A ORDEM importa: índice 0 = muito feliz (esquerda
- * do indicador, lado "+") e índice 4 = muito triste (direita, lado "−").
- * As cores dos rostos e dos segmentos da barra vêm da referência visual.
- */
-export const EMOCOES: ReadonlyArray<{
-  chave: EmocaoChave;
-  rotulo: string;
-  nivel: 1 | 2 | 3 | 4 | 5;
-  cor: string;
-}> = [
+/** Nomes das famílias de fonte (devem ser registrados com expo-font no layout raiz). */
+export const FONTES = {
+  principal: 'StixTwoMath',
+  secundaria: 'AverageSans',
+  titulo: 'BebasNeue',
+  texto: 'AXES', // textos E botões
+} as const;
+
+/** Emoções do check-in. ORDEM: índice 0 = muito feliz (esquerda, lado "+") … 4 = muito triste. */
+const EMOCOES: ReadonlyArray<{ chave: EmocaoChave; rotulo: string; nivel: 1 | 2 | 3 | 4 | 5; cor: string }> = [
   { chave: 'muito_feliz', rotulo: 'Muito feliz', nivel: 5, cor: '#8A7AD8' },
   { chave: 'feliz', rotulo: 'Feliz', nivel: 4, cor: '#A5B8E3' },
   { chave: 'neutro', rotulo: 'Neutro', nivel: 3, cor: '#FFDDB4' },
@@ -252,20 +213,6 @@ export const EMOCOES: ReadonlyArray<{
   { chave: 'muito_triste', rotulo: 'Muito triste', nivel: 1, cor: '#B3E3D5' },
 ];
 
-/** Cartões de atividade do carrossel da Home (cores e textos da referência). */
-const ATIVIDADES_HOME: ReadonlyArray<{
-  rota: RotaExterna;
-  titulo: string;
-  fundo: string;
-  texto: string; // cor do texto, escolhida para manter boa legibilidade
-}> = [
-  { rota: 'evolucaoPessoal', titulo: 'Evolução Pessoal', fundo: CORES.azulEvolua, texto: CORES.branco },
-  { rota: 'questionarios', titulo: 'Meus Questionários', fundo: CORES.azulCeu, texto: CORES.azulMarinho },
-  { rota: 'metas', titulo: 'Minhas Metas', fundo: CORES.verdeAgua, texto: CORES.branco },
-  { rota: 'exercicios', titulo: 'Meus Exercícios', fundo: CORES.lavanda, texto: CORES.azulMarinho },
-];
-
-/** Frases motivacionais. A frase do dia é escolhida por data (ver fraseDoDia). */
 const FRASES_MOTIVACIONAIS: ReadonlyArray<string> = [
   'A persistência realiza o impossível!',
   'Um passo de cada vez já é caminho percorrido.',
@@ -274,227 +221,25 @@ const FRASES_MOTIVACIONAIS: ReadonlyArray<string> = [
   'Pequenas conquistas constroem grandes mudanças.',
 ];
 
-/** Estilos do módulo. Todas as classes usam o prefixo "ev-" para não colidir com o resto do app. */
-const ESTILOS = `
-@import url('https://fonts.googleapis.com/css2?family=STIX+Two+Math&family=Average+Sans&family=Bebas+Neue&display=swap');
-
-/* AXES: fonte de textos e botões. Forneça o arquivo em /fonts/AXES.woff2 (ou ajuste o caminho). */
-@font-face { font-family: 'AXES'; src: local('AXES'), url('/fonts/AXES.woff2') format('woff2'); font-display: swap; }
-
-.ev-app {
-  --azul-evolua: ${CORES.azulEvolua}; --azul-ceu: ${CORES.azulCeu}; --azul-gelo: ${CORES.azulGelo};
-  --azul-profundo: ${CORES.azulProfundo}; --azul-marinho: ${CORES.azulMarinho};
-  --grafite: ${CORES.cinzaGrafite}; --cinza-azulado: ${CORES.cinzaAzulado}; --cinza-claro: ${CORES.cinzaClaro};
-  --fonte-principal: 'STIX Two Math', 'Times New Roman', serif;
-  --fonte-secundaria: 'Average Sans', sans-serif;
-  --fonte-titulo: 'Bebas Neue', Impact, sans-serif;
-  --fonte-texto: 'AXES', system-ui, sans-serif;
-  font-family: var(--fonte-texto);
-  color: var(--azul-marinho);
-  max-width: 430px; margin: 0 auto; min-height: 100vh;
-  display: flex; flex-direction: column; position: relative; overflow-x: hidden;
-  background: radial-gradient(circle at 50% 55%, #B4CDEE 0%, #DCE8F8 30%, #F7F9FF 68%), ${CORES.brancoAzulado};
-}
-.ev-app *, .ev-app *::before, .ev-app *::after { box-sizing: border-box; }
-.ev-app button { font-family: var(--fonte-texto); cursor: pointer; }
-.ev-app :focus-visible { outline: 3px solid var(--azul-evolua); outline-offset: 2px; }
-.ev-conteudo { flex: 1; padding: 12px 14px 28px; }
-
-/* Cabeçalho */
-.ev-cabecalho { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 76px; margin-bottom: 8px; }
-.ev-cabecalho__esq { justify-self: start; }
-.ev-cabecalho__centro { text-align: center; }
-.ev-cabecalho__dir { justify-self: end; display: flex; gap: 8px; align-items: center; }
-.ev-titulo { font-family: var(--fonte-titulo); font-size: 40px; line-height: 1; margin: 0; letter-spacing: .5px; }
-.ev-subtitulo { font-family: var(--fonte-principal); font-size: 14px; margin: 2px 0 0; }
-.ev-btn-icone { position: relative; background: none; border: 0; padding: 4px; width: 46px; height: 46px; display: grid; place-items: center; color: #000; }
-.ev-selo { position: absolute; top: 0; right: 0; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #FF2D55; color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
-.ev-avatar { border-radius: 50%; overflow: hidden; background: #000; display: block; flex: none; }
-.ev-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ev-avatar-btn { background: none; border: 0; padding: 0; border-radius: 50%; }
-
-/* Cartões */
-.ev-cartao { background: #fff; border-radius: 18px; padding: 14px; margin-bottom: 18px; }
-.ev-saudacao { font-family: var(--fonte-principal); font-weight: 700; font-size: 36px; margin: 0; line-height: 1.1; }
-.ev-frase { font-family: var(--fonte-secundaria); font-size: 16px; margin: 4px 0 12px; }
-.ev-secao-titulo { font-family: var(--fonte-titulo); font-weight: 400; font-size: 24px; margin: 0 0 8px; letter-spacing: .3px; }
-
-/* Carrossel de atividades (rolagem horizontal + fade nas bordas) */
-.ev-carrossel { position: relative; }
-.ev-carrossel__trilho {
-  display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding-right: 4px;
-  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 56px), transparent 100%);
-          mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 56px), transparent 100%);
-  transition: -webkit-mask-image .25s, mask-image .25s;
-}
-.ev-carrossel__trilho::-webkit-scrollbar { display: none; }
-.ev-carrossel--meio .ev-carrossel__trilho {
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 56px), transparent 100%);
-          mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 56px), transparent 100%);
-}
-.ev-carrossel--fim .ev-carrossel__trilho {
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 100%);
-          mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 100%);
-}
-.ev-atividade {
-  flex: none; width: 178px; height: 188px; border: 0; border-radius: 12px; padding: 8px 10px; text-align: left; vertical-align: top;
-  font-family: var(--fonte-secundaria); font-size: 24px; line-height: 1.1; scroll-snap-align: start; transition: transform .15s;
-}
-.ev-atividade:active { transform: scale(.97); }
-.ev-carrossel__seta {
-  position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%;
-  border: 0; background: rgba(75,85,99,.55); color: #fff; display: grid; place-items: center; transition: opacity .2s;
-}
-.ev-carrossel--fim .ev-carrossel__seta { opacity: 0; pointer-events: none; }
-
-/* Check-in emocional */
-.ev-emocoes { display: flex; justify-content: space-between; padding: 4px 8px 10px; }
-.ev-emocao { width: 52px; height: 52px; border-radius: 50%; border: 0; padding: 0; background: none; transition: transform .2s, box-shadow .2s; }
-.ev-emocao svg { width: 100%; height: 100%; display: block; }
-.ev-emocao[aria-checked='true'] { transform: scale(1.22); box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--azul-profundo); border-radius: 50%; }
-.ev-escala-emocao { display: flex; align-items: center; gap: 6px; padding: 0 4px; margin-bottom: 12px; }
-.ev-escala-emocao__sinal { font-size: 26px; font-weight: 700; width: 20px; text-align: center; line-height: 1; }
-.ev-escala-emocao__trilha { position: relative; flex: 1; height: 42px; display: flex; align-items: center; touch-action: none; cursor: pointer; }
-.ev-escala-emocao__faixa { display: flex; width: 100%; height: 12px; }
-.ev-escala-emocao__faixa span { flex: 1; }
-.ev-polegar {
-  position: absolute; top: 50%; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%;
-  background: var(--grafite); box-shadow: 0 4px 0 #2B323C; transition: left .18s ease-out, opacity .2s; pointer-events: none;
-}
-.ev-polegar--inativo { opacity: .55; }
-.ev-escala-numerica { margin-bottom: 8px; }
-.ev-escala-numerica__linha { display: flex; justify-content: space-between; align-items: baseline; padding: 0 6px; }
-.ev-escala-numerica__rotulo { font-size: 22px; }
-.ev-escala-numerica__valor { font-size: 18px; }
-.ev-range { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; margin: 0; }
-.ev-range::-webkit-slider-runnable-track { height: 10px; background: var(--azul-profundo); border-radius: 2px; }
-.ev-range::-moz-range-track { height: 10px; background: var(--azul-profundo); border-radius: 2px; }
-.ev-range::-webkit-slider-thumb { -webkit-appearance: none; width: 38px; height: 38px; margin-top: -14px; border-radius: 50%; background: var(--grafite); border: 0; box-shadow: 0 4px 0 #2B323C; }
-.ev-range::-moz-range-thumb { width: 38px; height: 38px; border-radius: 50%; background: var(--grafite); border: 0; box-shadow: 0 4px 0 #2B323C; }
-.ev-range--inativo::-webkit-slider-thumb { opacity: .55; }
-.ev-range--inativo::-moz-range-thumb { opacity: .55; }
-.ev-btn-primario {
-  display: block; width: 72%; margin: 14px auto 0; padding: 14px 10px; border: 0; border-radius: 10px;
-  background: #7FA0E3; color: #fff; font-size: 22px; font-weight: 700; transition: background .2s;
-}
-.ev-btn-primario:hover { background: var(--azul-evolua); }
-.ev-aviso { margin: 12px 4px 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; }
-.ev-aviso--ok { background: #C8EBD8; }
-.ev-aviso--erro { background: #FFE0E6; }
-.ev-aviso--info { background: var(--azul-gelo); }
-
-/* Perfil */
-.ev-perfil__topo { position: relative; background: ${CORES.rosaPastel}; border-radius: 16px; height: 196px; }
-.ev-perfil__topo .ev-avatar { position: absolute; left: 2px; top: 30px; border: 3px solid #000; }
-.ev-perfil__nome { font-family: var(--fonte-principal); font-weight: 700; font-size: 26px; margin: 14px 14px 0; }
-.ev-perfil__apelido { font-size: 15px; margin: 0 14px; }
-.ev-perfil__bio-rotulo { display: block; margin: 12px 14px 4px; font-size: 16px; }
-.ev-perfil__bio { width: calc(100% - 20px); margin: 0 10px 6px; min-height: 130px; border: 0; border-radius: 18px; background: var(--cinza-claro); padding: 14px; font: inherit; font-size: 16px; color: var(--azul-marinho); resize: vertical; }
-.ev-perfil__bio::placeholder { color: var(--cinza-azulado); }
-.ev-grade-atividades { display: grid; grid-template-columns: 1fr 1fr 0.8fr; grid-template-rows: 196px 196px; gap: 24px 24px; }
-.ev-grade-atividades button { border: 0; border-radius: 22px; padding: 14px; text-align: left; font-family: var(--fonte-secundaria); font-size: 25px; line-height: 1.05; color: #fff; }
-.ev-grade-atividades .ev-metas { grid-row: 1 / span 2; grid-column: 3; display: flex; flex-direction: column; justify-content: space-between; }
-.ev-metas__barras { display: flex; align-items: flex-end; gap: 6px; height: 62%; }
-.ev-metas__barras span { flex: 1; background: ${CORES.verdeAgua}; border-radius: 4px; }
-.ev-mais { display: block; width: 100px; height: 60px; margin: 14px auto 0; border-radius: 16px; background: var(--cinza-claro); color: #fff; text-align: center; line-height: 60px; letter-spacing: 3px; }
-
-/* Configurações */
-.ev-linha { background: #fff; border-radius: 18px; margin-bottom: 14px; overflow: hidden; }
-.ev-linha__cabeca { width: 100%; min-height: 76px; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 0; background: none; text-align: left; color: var(--azul-marinho); }
-.ev-linha__rotulo { font-size: 20px; flex: none; width: 38%; }
-.ev-linha__valor { flex: 1; font-size: 20px; color: var(--cinza-azulado); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ev-linha__valor--avatar { display: flex; justify-content: flex-end; }
-.ev-seta { flex: none; width: 46px; height: 46px; border-radius: 50%; background: #A6A8AB; color: #fff; display: grid; place-items: center; transition: transform .2s; }
-.ev-linha--aberta .ev-seta { transform: rotate(90deg); }
-.ev-linha__painel { padding: 4px 16px 18px; }
-.ev-linha__painel h3 { font-size: 18px; font-weight: 400; margin: 6px 0 10px; }
-.ev-campo { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 18px; }
-.ev-campo input, .ev-campo select { height: 44px; border: 0; border-radius: 10px; background: var(--cinza-claro); padding: 0 12px; font: inherit; font-size: 16px; color: var(--azul-marinho); width: 100%; }
-.ev-campos-duplos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.ev-opcoes { display: flex; flex-direction: column; gap: 8px; }
-.ev-opcao { display: flex; align-items: center; gap: 10px; font-size: 18px; min-height: 44px; }
-.ev-opcao input { width: 22px; height: 22px; accent-color: var(--azul-evolua); }
-.ev-btn-secundario { border: 0; border-radius: 10px; background: var(--cinza-claro); color: var(--azul-marinho); padding: 12px 16px; font-size: 16px; margin: 4px 8px 4px 0; box-shadow: 0 2px 4px rgba(0,0,0,.2); }
-.ev-btn-confirmar { border: 0; border-radius: 10px; background: #7FA0E3; color: #fff; padding: 12px 18px; font-size: 16px; font-weight: 700; margin: 4px 8px 4px 0; }
-.ev-btn-logout { display: block; width: 84%; margin: 22px auto 8px; padding: 18px; border: 0; border-radius: 12px; background: #4C566A; color: #fff; font-size: 20px; }
-.ev-zona { border: 2px dashed var(--cinza-azulado); border-radius: 14px; padding: 18px 12px; text-align: center; margin-bottom: 12px; font-size: 16px; transition: background .2s, border-color .2s; }
-.ev-zona--ativa { background: var(--azul-gelo); border-color: var(--azul-evolua); }
-.ev-dependencia { display: block; font-size: 13px; background: ${CORES.amareloPastel}; border-radius: 8px; padding: 8px 10px; margin: 6px 0 12px; }
-.ev-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-
-/* Notificações */
-.ev-abas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 0 6px; margin-bottom: 16px; }
-.ev-aba { border: 0; border-radius: 4px; padding: 3px 4px; background: #4C566A; color: #fff; font-size: 18px; letter-spacing: .5px; }
-.ev-aba[aria-selected='true'] { background: #94A3B8; color: #000; }
-.ev-notif { background: #fff; border-radius: 18px; margin-bottom: 14px; padding: 6px 12px 14px 16px; }
-.ev-notif__cabeca { width: 100%; display: flex; align-items: flex-start; gap: 10px; background: none; border: 0; padding: 8px 0 0; text-align: left; color: inherit; }
-.ev-notif__texto { flex: 1; min-width: 0; }
-.ev-notif__titulo { font-family: var(--fonte-principal); font-size: 24px; font-weight: 400; margin: 0; }
-.ev-notif__msg { font-size: 19px; color: var(--cinza-azulado); margin: 4px 0 0; }
-.ev-notif__msg--previa { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ev-notif__msg--completa { white-space: normal; line-height: 1.35; }
-.ev-notif__data { font-size: 13px; color: var(--cinza-azulado); margin: 6px 0 0; }
-.ev-notif__acoes { display: flex; flex-wrap: wrap; margin-top: 8px; }
-.ev-notif--aberta .ev-seta { transform: rotate(90deg); }
-.ev-vazio { text-align: center; color: var(--grafite); margin: 56px 20px; font-size: 18px; }
-
-/* Menu de navegação inferior */
-.ev-menu { position: sticky; bottom: 0; background: #7FA0E3; border-radius: 24px 24px 0 0; padding: 18px 12px 26px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-.ev-menu__botao { height: 76px; border: 0; border-radius: 12px; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 13px; color: var(--azul-marinho); color-scheme: light; }
-.ev-menu__botao svg { width: 40px; height: 40px; color: #6D6D6D; transition: color .2s; }
-.ev-menu__botao[aria-current='page'] svg { color: #5CB2FF; }
-.ev-menu__botao[aria-current='page'] { font-weight: 700; box-shadow: inset 0 -4px 0 #5CB2FF; }
-
-/* Placeholder de página externa */
-.ev-externa { background: #fff; border-radius: 18px; padding: 24px 16px; text-align: center; margin-top: 24px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .ev-app * { transition: none !important; scroll-behavior: auto !important; }
-}
-`;
-
 /* =============================================================================
- * 4. DADOS COMPARTILHADOS (ESTADO CENTRAL)
+ * 4. DADOS COMPARTILHADOS (STORE CENTRAL)
  * -----------------------------------------------------------------------------
- * TODAS as páginas deste módulo leem e escrevem neste estado único, que fica
- * dentro de um Context do React. Por isso:
- *   - trocar a foto nas Configurações atualiza Home, Perfil e Notificações;
- *   - trocar o apelido atualiza a saudação da Home e o Perfil;
- *   - trocar o nome/sobrenome atualiza o Perfil e a linha "Nome" das Configurações;
- *   - salvar um check-in adiciona um item em `estado.checkins`;
- *   - mudar o status de uma notificação muda a aba em que ela aparece.
+ * Estado único em memória, fora do React, lido com useSyncExternalStore.
+ * Qualquer arquivo pode importar os hooks/funções exportados daqui.
  *
- * FORMA DO ESTADO (EstadoEvolua):
- *   perfil        → PerfilUsuario (nome, sobrenome, apelido, foto, bio, nascimento,
- *                   gênero e contato)
- *   checkins      → RegistroCheckin[]  (mais recente primeiro)
- *   notificacoes  → Notificacao[]
- *   preferencias  → Preferencias
- *   rota          → página atualmente exibida
+ * O QUE CADA TELA FAZ COM ELE:
+ *   - Trocar a foto (Configurações)  → atualiza Home, Perfil e Notificações.
+ *   - Trocar o apelido               → atualiza "Olá, [apelido]!" na Home e o Perfil.
+ *   - Trocar nome/sobrenome          → atualiza o Perfil e a linha "Nome" das Configurações.
+ *   - Salvar um check-in             → entra em estado.checkins (ver guia abaixo).
+ *   - Mudar status de notificação    → muda a aba em que ela aparece.
  *
- * COMO OUTROS COLABORADORES ACESSAM OS DADOS:
- *   Dentro de <ModuloHome>, qualquer componente (inclusive as páginas plugadas
- *   por `paginasExternas`) pode usar:
- *       const { estado, acoes } = useEvolua();
- *       estado.perfil.apelido
- *       estado.checkins
- *   Fora do módulo, use as props de saída (onCheckinSalvo, onPerfilAtualizado,
- *   onNotificacoesAlteradas) para receber os dados e guardá-los onde o projeto
- *   preferir (store global, API etc.).
+ * Nada é persistido (sem banco, sem AsyncStorage): ao fechar o app os dados se
+ * perdem. Para integrar, carregue os dados do backend com inicializarDadosEvolua()
+ * e grave as mudanças usando os ouvintes (aoSalvarCheckin, aoMudarPerfil, aoMudarNotificacoes).
  * ========================================================================== */
 
-export interface EstadoEvolua {
-  perfil: PerfilUsuario;
-  checkins: RegistroCheckin[];
-  notificacoes: Notificacao[];
-  preferencias: Preferencias;
-  rota: Rota;
-}
-
-/**
- * Valores iniciais de PLACEHOLDER (textos da referência visual).
- * Na integração real, passe os dados do usuário logado em `usuarioInicial`.
- */
+/** Valores iniciais de PLACEHOLDER (textos do design). Substitua com inicializarDadosEvolua(). */
 const PERFIL_PADRAO: PerfilUsuario = {
   id: 'usuario-local',
   nome: 'Nome',
@@ -507,251 +252,276 @@ const PERFIL_PADRAO: PerfilUsuario = {
   contato: { email: 'email.exemple', telefone: '(11) 9XXXX-XXXX' },
 };
 
-const PREFERENCIAS_PADRAO: Preferencias = { idioma: 'pt-BR', abaNotificacoesInicial: 'nao_lida' };
-
-/** Retorna um ISO de "agora menos N horas" (apenas para os exemplos abaixo). */
-const horasAtrasISO = (horas: number): string => new Date(Date.now() - horas * 3600 * 1000).toISOString();
+const horasAtrasISO = (h: number): string => new Date(Date.now() - h * 3600 * 1000).toISOString();
 
 /**
- * NOTIFICAÇÕES DE EXEMPLO (títulos e textos da referência visual).
- * São apenas dados iniciais para demonstrar o layout. Para usar dados reais,
- * passe `notificacoesIniciais` ao <ModuloHome>. Títulos, mensagens, datas e
- * status podem ser editados livremente aqui ou vir do backend.
+ * ===========================================================================
+ * >>> NOTIFICAÇÕES — ONDE EDITAR TÍTULO E MENSAGEM <<<
+ * Cada item abaixo é uma notificação:
+ *   titulo   → título exibido no cartão (EDITE AQUI)
+ *   mensagem → texto completo; a prévia é cortada com "..." automaticamente (EDITE AQUI)
+ *   dataISO  → opcional; remova a linha para não mostrar data
+ *   status   → 'nao_lida' | 'lida' | 'arquivada' (define em qual aba aparece)
+ * Para dados reais do backend, use inicializarDadosEvolua({ notificacoes }).
+ * ===========================================================================
  */
 const NOTIFICACOES_EXEMPLO: Notificacao[] = [
   {
     id: 'notif-1',
-    titulo: 'Check-in',
-    mensagem:
+    titulo: 'Check-in', // <-- TÍTULO
+    mensagem: // <-- MENSAGEM
       'Você já fez seu check-in emocional hoje? Reserve um instante para registrar como você está se sentindo e acompanhar sua evolução ao longo dos dias.',
     dataISO: horasAtrasISO(2),
     status: 'nao_lida',
   },
   {
     id: 'notif-2',
-    titulo: 'Seu relatório mensal está pronto',
-    mensagem: 'Acesse a aba Evolua para conferir',
+    titulo: 'Seu relatório mensal está pronto', // <-- TÍTULO
+    mensagem: 'Acesse a aba Evolua para conferir', // <-- MENSAGEM
     dataISO: horasAtrasISO(26),
     status: 'nao_lida',
   },
   {
     id: 'notif-3',
-    titulo: 'Atualização',
-    mensagem: 'Confira as novas funcionalidades disponíveis no Evolua.',
+    titulo: 'Atualização', // <-- TÍTULO
+    mensagem: 'Confira as novas funcionalidades disponíveis no Evolua.', // <-- MENSAGEM
     status: 'nao_lida',
   },
   {
     id: 'notif-4',
-    titulo: 'Um recomeço',
-    mensagem: 'Você já deu o primeiro passo, agora é só continuar. Cada dia conta na sua jornada.',
+    titulo: 'Um recomeço', // <-- TÍTULO
+    mensagem: 'Você já deu o primeiro passo, agora é só continuar. Cada dia conta na sua jornada.', // <-- MENSAGEM
     dataISO: horasAtrasISO(72),
     status: 'nao_lida',
   },
 ];
 
-/* ---- Reducer: única porta de entrada para alterar o estado compartilhado ---- */
+let estadoAtual: EstadoEvolua = {
+  perfil: PERFIL_PADRAO,
+  checkins: [],
+  notificacoes: NOTIFICACOES_EXEMPLO,
+  preferencias: { idioma: 'pt-BR' },
+};
 
-type AcaoEstado =
-  | { tipo: 'perfil/atualizar'; parcial: Partial<PerfilUsuario> }
-  | { tipo: 'perfil/atualizarContato'; parcial: Partial<PerfilUsuario['contato']> }
-  | { tipo: 'checkin/adicionar'; registro: RegistroCheckin }
-  | { tipo: 'notificacao/definirStatus'; id: string; status: StatusNotificacao }
-  | { tipo: 'navegacao/ir'; rota: Rota };
+const ouvintesEstado = new Set<() => void>();
+const ouvintesCheckin = new Set<(r: RegistroCheckin) => void>();
+const ouvintesPerfil = new Set<(p: PerfilUsuario) => void>();
+const ouvintesNotificacoes = new Set<(n: Notificacao[]) => void>();
 
-function reducerEvolua(estado: EstadoEvolua, acao: AcaoEstado): EstadoEvolua {
-  switch (acao.tipo) {
-    case 'perfil/atualizar':
-      return { ...estado, perfil: { ...estado.perfil, ...acao.parcial } };
-    case 'perfil/atualizarContato':
-      return {
-        ...estado,
-        perfil: { ...estado.perfil, contato: { ...estado.perfil.contato, ...acao.parcial } },
-      };
-    case 'checkin/adicionar':
-      // Mais recente primeiro.
-      return { ...estado, checkins: [acao.registro, ...estado.checkins] };
-    case 'notificacao/definirStatus':
-      return {
-        ...estado,
-        notificacoes: estado.notificacoes.map((n) => (n.id === acao.id ? { ...n, status: acao.status } : n)),
-      };
-    case 'navegacao/ir':
-      return { ...estado, rota: acao.rota };
-    default:
-      return estado;
-  }
+function definirEstado(novo: EstadoEvolua): void {
+  estadoAtual = novo;
+  ouvintesEstado.forEach((l) => l());
 }
 
-/* ---- Seletores de check-ins (para a página de histórico de outro colaborador) ---- */
+/** Leitura pontual do estado (fora de componentes). Dentro de componentes use useEvolua(). */
+export const lerEstadoEvolua = (): EstadoEvolua => estadoAtual;
 
 /**
- * CHECK-INS — GUIA PARA O RESPONSÁVEL PELO HISTÓRICO
+ * Hook para ler o estado compartilhado. Passe um seletor que devolva uma parte
+ * já existente do estado (sem criar objetos novos), ex.:
+ *     const perfil = useEvolua((e) => e.perfil);
+ *     const checkins = useEvolua((e) => e.checkins);
+ */
+export function useEvolua<T>(seletor: (e: EstadoEvolua) => T): T {
+  const assinar = useCallback((l: () => void) => {
+    ouvintesEstado.add(l);
+    return () => { ouvintesEstado.delete(l); };
+  }, []);
+  return useSyncExternalStore(assinar, () => seletor(estadoAtual), () => seletor(estadoAtual));
+}
+
+/** Carrega dados reais (usuário, check-ins, notificações) vindos do backend. Chame ao iniciar a sessão. */
+export function inicializarDadosEvolua(dados: {
+  perfil?: Partial<PerfilUsuario>;
+  checkins?: RegistroCheckin[];
+  notificacoes?: Notificacao[];
+}): void {
+  definirEstado({
+    ...estadoAtual,
+    perfil: dados.perfil
+      ? { ...estadoAtual.perfil, ...dados.perfil, contato: { ...estadoAtual.perfil.contato, ...dados.perfil.contato } }
+      : estadoAtual.perfil,
+    checkins: dados.checkins ?? estadoAtual.checkins,
+    notificacoes: dados.notificacoes ?? estadoAtual.notificacoes,
+  });
+}
+
+export function atualizarPerfil(parcial: Partial<PerfilUsuario>): void {
+  const perfil = { ...estadoAtual.perfil, ...parcial };
+  definirEstado({ ...estadoAtual, perfil });
+  ouvintesPerfil.forEach((l) => l(perfil)); // INTEGRAÇÃO: persistir perfil no backend
+}
+
+export function atualizarContato(parcial: Partial<PerfilUsuario['contato']>): void {
+  atualizarPerfil({ contato: { ...estadoAtual.perfil.contato, ...parcial } });
+}
+
+export function definirStatusNotificacao(id: string, status: StatusNotificacao): void {
+  const notificacoes = estadoAtual.notificacoes.map((n) => (n.id === id ? { ...n, status } : n));
+  definirEstado({ ...estadoAtual, notificacoes });
+  ouvintesNotificacoes.forEach((l) => l(notificacoes)); // INTEGRAÇÃO: persistir status no backend
+}
+
+/** Registra um ouvinte chamado a cada check-in salvo (ex.: enviar ao backend). Retorna a função para cancelar. */
+export function aoSalvarCheckin(l: (r: RegistroCheckin) => void): () => void {
+  ouvintesCheckin.add(l);
+  return () => { ouvintesCheckin.delete(l); };
+}
+export function aoMudarPerfil(l: (p: PerfilUsuario) => void): () => void {
+  ouvintesPerfil.add(l);
+  return () => { ouvintesPerfil.delete(l); };
+}
+export function aoMudarNotificacoes(l: (n: Notificacao[]) => void): () => void {
+  ouvintesNotificacoes.add(l);
+  return () => { ouvintesNotificacoes.delete(l); };
+}
+
+/**
+ * ===========================================================================
+ * >>> SALVAR CHECK-IN EMOCIONAL — GUIA PARA QUEM FAZ O HISTÓRICO <<<
+ *
+ * ESTA FUNÇÃO (salvarCheckin) É A PARTE DO CÓDIGO QUE SALVA O CHECK-IN.
+ * Ela é chamada pelo botão "Salvar o meu dia" da Home. Quem estiver
+ * programando a página de histórico deve USAR ESTE PONTO para linkar o
+ * check-in salvo e fazê-lo aparecer no histórico.
  *
  * Como os dados são organizados:
- *   Cada clique em "Salvar o meu dia" gera UM RegistroCheckin imutável, inserido
- *   no início de `estado.checkins`. Nada é sobrescrito: vários registros no mesmo
- *   dia são permitidos (use ultimoCheckinPorDia para ficar com o mais recente).
+ *   Cada clique gera UM RegistroCheckin, inserido no início de estado.checkins.
+ *   Nada é sobrescrito; vários registros no mesmo dia são permitidos.
  *
- * Informações armazenadas por registro:
+ * O que é armazenado em cada registro:
  *   id, usuarioId, criadoEmISO, dataLocal, emocao, emocaoNivel (1–5),
  *   ansiedade (1–10), estresse (1–10), energia (1–10).
  *
- * Como identificar cada registro e sua data:
- *   - `id` identifica o registro (chave única).
- *   - `criadoEmISO` guarda o instante exato; `dataLocal` ("AAAA-MM-DD") guarda o dia
- *     no fuso do usuário e deve ser usada para agrupar/filtrar por dia.
+ * Como identificar registro e data:
+ *   - `id` é único por registro (use como key da lista).
+ *   - `criadoEmISO` = instante exato; `dataLocal` ("AAAA-MM-DD") = dia no fuso
+ *     do usuário, use para agrupar/filtrar por dia.
  *
- * Como recuperar:
- *   - Dentro do módulo:  const { estado } = useEvolua();  → estado.checkins
- *                        ou  const registros = useCheckins({ de: '2025-03-01' });
- *   - Fora do módulo:    receba cada novo registro em `onCheckinSalvo` e grave
- *                        no backend; depois injete a lista de volta em
- *                        `checkinsIniciais` ao montar o <ModuloHome>.
- *   - Funções puras abaixo (filtrarCheckins, ultimoCheckinPorDia) funcionam com
- *     qualquer array de RegistroCheckin, em qualquer lugar do projeto.
+ * Como recuperar os registros na página de histórico:
+ *     import { useCheckins } from './home';            // ajuste o caminho
+ *     const registros = useCheckins({ de: '2025-03-01', ate: '2025-03-31' });
+ *   ou, sem filtro, useEvolua((e) => e.checkins).
+ *
+ * Como enviar ao backend: use aoSalvarCheckin((registro) => api.post(...)).
+ * Para carregar o histórico salvo: inicializarDadosEvolua({ checkins }).
+ * ===========================================================================
  */
-export interface FiltroCheckins {
-  de?: string;       // "AAAA-MM-DD" inclusive
-  ate?: string;      // "AAAA-MM-DD" inclusive
-  emocao?: EmocaoChave;
+export function salvarCheckin(dados: Pick<RegistroCheckin, 'emocao' | 'ansiedade' | 'estresse' | 'energia'>): RegistroCheckin {
+  const agora = new Date();
+  const registro: RegistroCheckin = {
+    id: gerarId('checkin'),
+    usuarioId: estadoAtual.perfil.id,
+    criadoEmISO: agora.toISOString(),
+    dataLocal: dataLocalISO(agora),
+    emocao: dados.emocao,
+    emocaoNivel: EMOCOES.find((e) => e.chave === dados.emocao)?.nivel ?? 3,
+    ansiedade: dados.ansiedade,
+    estresse: dados.estresse,
+    energia: dados.energia,
+  };
+  definirEstado({ ...estadoAtual, checkins: [registro, ...estadoAtual.checkins] });
+  ouvintesCheckin.forEach((l) => l(registro));
+  return registro;
 }
 
-export function filtrarCheckins(registros: RegistroCheckin[], filtro: FiltroCheckins = {}): RegistroCheckin[] {
+export interface FiltroCheckins { de?: string; ate?: string; emocao?: EmocaoChave }
+
+/** Filtra check-ins (funciona com qualquer array de RegistroCheckin). */
+export function filtrarCheckins(registros: RegistroCheckin[], f: FiltroCheckins = {}): RegistroCheckin[] {
   return registros.filter(
-    (r) =>
-      (!filtro.de || r.dataLocal >= filtro.de) &&
-      (!filtro.ate || r.dataLocal <= filtro.ate) &&
-      (!filtro.emocao || r.emocao === filtro.emocao),
+    (r) => (!f.de || r.dataLocal >= f.de) && (!f.ate || r.dataLocal <= f.ate) && (!f.emocao || r.emocao === f.emocao),
   );
 }
 
-/** Reduz a lista a um registro por dia (o mais recente de cada dia), chaveado por dataLocal. */
-export function ultimoCheckinPorDia(registros: RegistroCheckin[]): Record<string, RegistroCheckin> {
-  const porDia: Record<string, RegistroCheckin> = {};
-  for (const r of registros) {
-    const atual = porDia[r.dataLocal];
-    if (!atual || r.criadoEmISO > atual.criadoEmISO) porDia[r.dataLocal] = r;
-  }
-  return porDia;
-}
-
-/* ---- Contexto ---- */
-
-/** Ações expostas aos componentes. Use estas funções em vez de mexer no estado diretamente. */
-export interface AcoesEvolua {
-  irPara: (rota: Rota) => void;
-  atualizarPerfil: (parcial: Partial<PerfilUsuario>) => void;
-  atualizarContato: (parcial: Partial<PerfilUsuario['contato']>) => void;
-  /** Cria e guarda um check-in. Retorna o registro criado. */
-  salvarCheckin: (dados: Pick<RegistroCheckin, 'emocao' | 'ansiedade' | 'estresse' | 'energia'>) => RegistroCheckin;
-  definirStatusNotificacao: (id: string, status: StatusNotificacao) => void;
-}
-
-interface ValorContexto {
-  estado: EstadoEvolua;
-  acoes: AcoesEvolua;
-  servicos: ServicosBackend;
-  paginasExternas: PropsModuloHome['paginasExternas'];
-  onLogout?: () => void;
-}
-
-const EvoluaContext = createContext<ValorContexto | null>(null);
-
-/** Hook principal: dá acesso ao estado compartilhado e às ações. */
-export function useEvolua(): ValorContexto {
-  const ctx = useContext(EvoluaContext);
-  if (!ctx) throw new Error('useEvolua deve ser usado dentro de <ModuloHome>.');
-  return ctx;
-}
-
-/** Hook de conveniência para o histórico: devolve os check-ins já filtrados. */
+/** Hook para o histórico: check-ins já filtrados, atualizando sozinho a cada novo salvamento. */
 export function useCheckins(filtro?: FiltroCheckins): RegistroCheckin[] {
-  const { estado } = useEvolua();
-  return useMemo(() => filtrarCheckins(estado.checkins, filtro), [estado.checkins, filtro?.de, filtro?.ate, filtro?.emocao]); // eslint-disable-line react-hooks/exhaustive-deps
+  const todos = useEvolua((e) => e.checkins);
+  return useMemo(() => filtrarCheckins(todos, filtro), [todos, filtro?.de, filtro?.ate, filtro?.emocao]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /* =============================================================================
  * 5. PONTOS DE INTEGRAÇÃO COM O BACKEND
  * -----------------------------------------------------------------------------
- * As funções abaixo dependem de servidor (autenticação, envio de códigos por
- * e-mail/SMS, validação de senha, encerramento de sessão). Por segurança NADA
- * disso é simulado: a implementação padrão sempre devolve
- * { ok: false, naoConectado: true } e a interface avisa o usuário.
- *
- * Para integrar: crie um objeto que implemente `ServicosBackend` e passe em
- * <ModuloHome servicos={meusServicos} />. Cada método documenta o que o
- * servidor precisa fazer.
+ * Tudo aqui depende de servidor (autenticação, envio de códigos por e-mail/SMS,
+ * validação da senha atual, sessão). Por segurança NADA é simulado: a
+ * implementação padrão devolve { ok:false, naoConectado:true } e a tela avisa
+ * o usuário. Para integrar, chame configurarServicosBackend({...}) com a
+ * implementação real (ex.: no layout raiz).
  * ========================================================================== */
 
-const MENSAGEM_NAO_CONECTADO =
-  'Esta ação depende de integração com o backend, que ainda não foi conectada.';
+const MSG_NAO_CONECTADO = 'Esta ação depende de integração com o backend, que ainda não foi conectada.';
 
-export const servicosPadrao: ServicosBackend = {
-  // BACKEND: gerar código, enviar ao NOVO e-mail/telefone e guardá-lo com validade curta.
-  async solicitarCodigoAlteracaoContato() {
-    return { ok: false, naoConectado: true, mensagem: MENSAGEM_NAO_CONECTADO };
-  },
-  // BACKEND: comparar código, aplicar a troca de contato na conta do usuário autenticado.
-  async confirmarAlteracaoContato() {
-    return { ok: false, naoConectado: true, mensagem: MENSAGEM_NAO_CONECTADO };
-  },
-  // BACKEND: validar a senha atual, aplicar política de senha e gravar o hash da nova senha.
-  async alterarSenha() {
-    return { ok: false, naoConectado: true, mensagem: MENSAGEM_NAO_CONECTADO };
-  },
-  // BACKEND: enviar código de recuperação ao e-mail/telefone JÁ cadastrados na conta.
-  async solicitarCodigoRecuperacao() {
-    return { ok: false, naoConectado: true, mensagem: MENSAGEM_NAO_CONECTADO };
-  },
+const servicosPadrao: ServicosBackend = {
+  // BACKEND: gerar código, enviar ao NOVO e-mail/telefone, guardar com validade curta.
+  solicitarCodigoAlteracaoContato: async () => ({ ok: false, naoConectado: true, mensagem: MSG_NAO_CONECTADO }),
+  // BACKEND: comparar o código e aplicar a troca de contato na conta autenticada.
+  confirmarAlteracaoContato: async () => ({ ok: false, naoConectado: true, mensagem: MSG_NAO_CONECTADO }),
+  // BACKEND: validar a senha ATUAL, aplicar política de senha e gravar o hash da nova.
+  alterarSenha: async () => ({ ok: false, naoConectado: true, mensagem: MSG_NAO_CONECTADO }),
+  // BACKEND: enviar código de recuperação ao e-mail/telefone JÁ cadastrados.
+  solicitarCodigoRecuperacao: async () => ({ ok: false, naoConectado: true, mensagem: MSG_NAO_CONECTADO }),
   // BACKEND: validar o código recebido e redefinir a senha.
-  async confirmarRecuperacaoSenha() {
-    return { ok: false, naoConectado: true, mensagem: MENSAGEM_NAO_CONECTADO };
-  },
-  // BACKEND: invalidar token/sessão. Depois disso o app deve redirecionar para o login (onLogout).
-  async encerrarSessao() {
-    return { ok: false, naoConectado: true, mensagem: MENSAGEM_NAO_CONECTADO };
-  },
+  confirmarRecuperacaoSenha: async () => ({ ok: false, naoConectado: true, mensagem: MSG_NAO_CONECTADO }),
+  // BACKEND: invalidar a sessão/token. Se ok, esta tela vai para /acesso/login.
+  encerrarSessao: async () => ({ ok: false, naoConectado: true, mensagem: MSG_NAO_CONECTADO }),
 };
+
+let servicos: ServicosBackend = servicosPadrao;
+
+/** Substitui os serviços padrão pela implementação real do backend. */
+export function configurarServicosBackend(implementacao: ServicosBackend): void {
+  servicos = implementacao;
+}
 
 /* =============================================================================
  * 6. FUNÇÕES AUXILIARES
  * ========================================================================== */
 
-/** Gera um id único. Usa crypto.randomUUID quando disponível. */
 function gerarId(prefixo: string): string {
-  const c: any = typeof crypto !== 'undefined' ? crypto : undefined;
-  if (c && typeof c.randomUUID === 'function') return `${prefixo}-${c.randomUUID()}`;
   return `${prefixo}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-/** "AAAA-MM-DD" no fuso local do usuário (NÃO use toISOString, que é UTC). */
+/** "AAAA-MM-DD" no fuso local (não use toISOString, que é UTC). */
 function dataLocalISO(d: Date): string {
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** "AAAA-MM-DD" → "DD/MM/AAAA". Sem data, retorna o placeholder da referência. */
 function formatarDataNascimento(iso: string | null): string {
   if (!iso) return '00/00/0000';
   const [a, m, d] = iso.split('-');
   return `${d}/${m}/${a}`;
 }
 
-/** Data/hora amigável para notificações. Retorna '' quando não há data. */
-function formatarDataNotificacao(iso?: string): string {
-  if (!iso) return '';
-  const data = new Date(iso);
-  if (Number.isNaN(data.getTime())) return '';
-  return data.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+/** Máscara DD/MM/AAAA enquanto o usuário digita. */
+function mascararData(texto: string): string {
+  const n = texto.replace(/\D/g, '').slice(0, 8);
+  if (n.length <= 2) return n;
+  if (n.length <= 4) return `${n.slice(0, 2)}/${n.slice(2)}`;
+  return `${n.slice(0, 2)}/${n.slice(2, 4)}/${n.slice(4)}`;
 }
 
-/** Escolhe a frase motivacional do dia (muda a cada dia, sem aleatoriedade). */
+/** "DD/MM/AAAA" → "AAAA-MM-DD" ou null se a data não existir ou estiver no futuro. */
+function dataBRparaISO(br: string): string | null {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(br);
+  if (!m) return null;
+  const [, dd, mm, aa] = m;
+  const d = new Date(Number(aa), Number(mm) - 1, Number(dd));
+  if (d.getFullYear() !== Number(aa) || d.getMonth() !== Number(mm) - 1 || d.getDate() !== Number(dd)) return null;
+  if (d.getTime() > Date.now()) return null;
+  return `${aa}-${mm}-${dd}`;
+}
+
+function formatarDataNotificacao(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 function fraseDoDia(hoje: Date = new Date()): string {
-  const inicioAno = new Date(hoje.getFullYear(), 0, 0).getTime();
-  const diaDoAno = Math.floor((hoje.getTime() - inicioAno) / 86400000);
-  // A primeira frase é a da referência visual; ela abre a lista de rotação.
-  return FRASES_MOTIVACIONAIS[diaDoAno % FRASES_MOTIVACIONAIS.length];
+  const dia = Math.floor((hoje.getTime() - new Date(hoje.getFullYear(), 0, 0).getTime()) / 86400000);
+  return FRASES_MOTIVACIONAIS[dia % FRASES_MOTIVACIONAIS.length];
 }
 
 const GENEROS: ReadonlyArray<{ valor: Genero; rotulo: string }> = [
@@ -760,424 +530,322 @@ const GENEROS: ReadonlyArray<{ valor: Genero; rotulo: string }> = [
   { valor: 'outro', rotulo: 'Outro' },
   { valor: 'nao_informar', rotulo: 'Prefiro não informar' },
 ];
-
 const rotuloGenero = (g: Genero): string => GENEROS.find((x) => x.valor === g)?.rotulo ?? 'Prefiro não informar';
 
 const emailValido = (v: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-const telefoneValido = (v: string): boolean => {
-  const digitos = v.replace(/\D/g, '');
-  return digitos.length === 10 || digitos.length === 11;
-};
+const telefoneValido = (v: string): boolean => [10, 11].includes(v.replace(/\D/g, '').length);
 
-const TIPOS_IMAGEM_ACEITOS = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 const TAMANHO_MAX_FOTO = 5 * 1024 * 1024; // 5 MB
 
-/**
- * Lê uma imagem escolhida pelo usuário e devolve um data URL.
- * INTEGRAÇÃO: para persistir a foto, envie o `File` original ao storage do
- * backend em `onPerfilAtualizado` / upload próprio e troque `fotoUrl` pela URL final.
- */
-function lerImagem(arquivo: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (!TIPOS_IMAGEM_ACEITOS.includes(arquivo.type)) {
-      reject(new Error('Formato não aceito. Use PNG, JPG, WEBP ou GIF.'));
-      return;
-    }
-    if (arquivo.size > TAMANHO_MAX_FOTO) {
-      reject(new Error('A imagem é grande demais. O limite é 5 MB.'));
-      return;
-    }
-    const leitor = new FileReader();
-    leitor.onload = () => resolve(String(leitor.result));
-    leitor.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
-    leitor.readAsDataURL(arquivo);
-  });
-}
-
 /* =============================================================================
- * 7. ÍCONES (SVG inline, herdam a cor via currentColor)
+ * 7. ROTAS DAS ATIVIDADES — PONTOS DE INTEGRAÇÃO COM OUTRAS PÁGINAS
+ * -----------------------------------------------------------------------------
+ * Os cartões de atividade da Home e do Perfil abrem a página de outro
+ * colaborador. Quando a página existir, troque `null` pelo caminho dela
+ * (ex.: '/principal/metas'). Enquanto for null, o toque mostra um aviso
+ * "em breve" — o botão já está clicável e pronto.
  * ========================================================================== */
 
-const IconeEngrenagem = () => (
-  <svg viewBox="0 0 24 24" width="38" height="38" fill="currentColor" aria-hidden="true">
-    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
-  </svg>
-);
+export type ChaveAtividade = 'checkinEmocional' | 'evolucaoPessoal' | 'questionarios' | 'exercicios' | 'metas';
 
-const IconeEnvelope = () => (
-  <svg viewBox="0 0 48 36" width="46" height="36" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinejoin="round" aria-hidden="true">
-    <rect x="2" y="3" width="44" height="30" rx="5" />
-    <path d="M3 6l21 15L45 6M3 31l15-13M45 31L30 18" />
-  </svg>
-);
-
-const IconeSeta = () => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M9 5l7 7-7 7" />
-  </svg>
-);
-
-const IconeAvatarPadrao = ({ tamanho }: { tamanho: number }) => (
-  <svg viewBox="0 0 100 100" width={tamanho} height={tamanho} aria-hidden="true">
-    <circle cx="50" cy="50" r="50" fill="#000" />
-    <circle cx="50" cy="38" r="15" fill="#fff" />
-    <path d="M18 88c4-20 18-28 32-28s28 8 32 28a50 50 0 0 1-64 0z" fill="#fff" />
-  </svg>
-);
-
-/** Rostos do check-in. Cada rosto usa a cor da sua emoção (ver EMOCOES). */
-const RostoEmocao = ({ chave, cor }: { chave: EmocaoChave; cor: string }) => {
-  const tr = { stroke: CORES.azulMarinho, strokeWidth: 4, strokeLinecap: 'round' as const, fill: 'none' };
-  return (
-    <svg viewBox="0 0 80 80" aria-hidden="true">
-      <circle cx="40" cy="40" r="39" fill={cor} />
-      {chave === 'muito_feliz' && (
-        <>
-          <path d="M20 31q5-7 10 0M50 31q5-7 10 0" {...tr} />
-          <path d="M20 46h40a20 18 0 0 1-40 0z" fill={CORES.azulMarinho} />
-        </>
-      )}
-      {chave === 'feliz' && (
-        <>
-          <circle cx="29" cy="32" r="3.5" fill={CORES.azulMarinho} />
-          <circle cx="51" cy="32" r="3.5" fill={CORES.azulMarinho} />
-          <path d="M26 48q14 12 28 0" {...tr} />
-        </>
-      )}
-      {chave === 'neutro' && (
-        <>
-          <circle cx="29" cy="32" r="3.5" fill={CORES.azulMarinho} />
-          <circle cx="51" cy="32" r="3.5" fill={CORES.azulMarinho} />
-          <path d="M27 52h26" {...tr} />
-        </>
-      )}
-      {chave === 'triste' && (
-        <>
-          <circle cx="29" cy="32" r="3.5" fill={CORES.azulMarinho} />
-          <circle cx="51" cy="32" r="3.5" fill={CORES.azulMarinho} />
-          <path d="M26 56q14-12 28 0" {...tr} />
-        </>
-      )}
-      {chave === 'muito_triste' && (
-        <>
-          <path d="M23 26l9 9M32 26l-9 9M48 26l9 9M57 26l-9 9" {...tr} strokeWidth={3.4} />
-          <path d="M28 60a12 13 0 0 1 24 0z" fill={CORES.azulMarinho} />
-        </>
-      )}
-    </svg>
-  );
+export const ROTAS_ATIVIDADES: Record<ChaveAtividade, Href | null> = {
+  checkinEmocional: null, // PERFIL → "Chek-in Emocional": ligar à página de histórico de check-ins
+  evolucaoPessoal: null,  // HOME e PERFIL → "Evolução Pessoal": ligar à página de evolução pessoal
+  questionarios: null,    // HOME ("Meus Questionários") e PERFIL ("Questionarios"): ligar à página de questionários
+  exercicios: null,       // HOME ("Meus Exercícios") e PERFIL ("Exercícios"): ligar à página de exercícios
+  metas: null,            // HOME ("Minhas Metas") e PERFIL ("Metas"): ligar à página de metas
 };
 
-const IconeMenuHome = () => (<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3L2 12h3v8h5v-6h4v6h5v-8h3z" /></svg>);
-const IconeMenuEvolua = () => (<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" /></svg>);
-const IconeMenuChat = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M3 4h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H8l-3 3v-3H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
-    <path d="M17 8h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2v3l-4-3h-5a2 2 0 0 1-2-2v-1h6a3 3 0 0 0 3-3z" />
-  </svg>
-);
-const IconeMenuProgresso = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <rect x="2" y="14" width="4" height="8" /><rect x="8" y="10" width="4" height="12" /><rect x="14" y="12" width="4" height="10" /><rect x="20" y="6" width="3" height="16" />
-    <path d="M2 10l6-5 4 3 7-6 1.5 1.5-8.5 7.2-4-3L3.5 12z" />
-  </svg>
-);
-const IconeMenuSaiba = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M12 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9z" />
-    <path d="M2 15l10 2 10-2v6l-10-2-10 2z" />
-  </svg>
-);
+function abrirAtividade(chave: ChaveAtividade): void {
+  const rota = ROTAS_ATIVIDADES[chave];
+  if (rota) router.navigate(rota);
+  else Alert.alert('Em breve', 'Esta página ainda não foi conectada.');
+}
+
+/* Contexto local de navegação entre as telas internas (evita repassar props). */
+const NavegacaoContext = createContext<{ irTela: (t: TelaInterna) => void }>({ irTela: () => {} });
+const useNavegacao = () => useContext(NavegacaoContext);
 
 /* =============================================================================
  * 8. COMPONENTES BASE
  * ========================================================================== */
 
-/** Foto de perfil (ou avatar padrão). Lê a foto do estado compartilhado. */
+/** Foto de perfil lida do estado compartilhado (ou avatar padrão preto). */
 function Avatar({ tamanho }: { tamanho: number }) {
-  const { estado } = useEvolua();
-  const { fotoUrl, apelido } = estado.perfil;
+  const perfil = useEvolua((e) => e.perfil);
+  if (perfil.fotoUrl) {
+    return (
+      <Image
+        source={{ uri: perfil.fotoUrl }}
+        style={{ width: tamanho, height: tamanho, borderRadius: tamanho / 2, backgroundColor: '#000' }}
+        contentFit="cover"
+        accessibilityLabel={`Foto de perfil de ${perfil.apelido}`}
+      />
+    );
+  }
   return (
-    <span className="ev-avatar" style={{ width: tamanho, height: tamanho }}>
-      {fotoUrl ? <img src={fotoUrl} alt={`Foto de perfil de ${apelido}`} /> : <IconeAvatarPadrao tamanho={tamanho} />}
-    </span>
+    <Svg width={tamanho} height={tamanho} viewBox="0 0 100 100" accessibilityLabel="Foto de perfil padrão">
+      <Circle cx={50} cy={50} r={50} fill="#000" />
+      <Circle cx={50} cy={38} r={15} fill="#fff" />
+      <Path d="M18 88c4-20 18-28 32-28s28 8 32 28a50 50 0 0 1-64 0z" fill="#fff" />
+    </Svg>
   );
 }
 
 interface PropsCabecalho {
   titulo: string;
   subtitulo?: string;
-  mostrarFoto?: boolean;          // foto à esquerda → abre Meu Perfil
-  mostrarConfiguracoes?: boolean; // engrenagem → abre Configurações
-  mostrarNotificacoes?: boolean;  // envelope → abre Notificações (com contador de não lidas)
+  mostrarFoto?: boolean;      // foto à esquerda → Meu Perfil
+  mostrarEngrenagem?: boolean; // → Configurações
+  mostrarCarta?: boolean;      // → Notificações (com contador de não lidas)
 }
 
-/**
- * Cabeçalho reutilizado por todas as páginas. Título sempre centralizado.
- * Cada ícone leva à sua página conforme a especificação.
- */
-function Cabecalho({ titulo, subtitulo, mostrarFoto, mostrarConfiguracoes = true, mostrarNotificacoes }: PropsCabecalho) {
-  const { estado, acoes } = useEvolua();
-  const naoLidas = estado.notificacoes.filter((n) => n.status === 'nao_lida').length;
+/** Cabeçalho das telas: título sempre centralizado; ícones levam às respectivas telas. */
+function Cabecalho({ titulo, subtitulo, mostrarFoto, mostrarEngrenagem = true, mostrarCarta }: PropsCabecalho) {
+  const { irTela } = useNavegacao();
+  const naoLidas = useEvolua((e) => e.notificacoes).filter((n) => n.status === 'nao_lida').length;
   return (
-    <header className="ev-cabecalho">
-      <div className="ev-cabecalho__esq">
+    <View style={estilos.cabecalho}>
+      <View style={estilos.cabLado}>
         {mostrarFoto && (
-          <button className="ev-avatar-btn" onClick={() => acoes.irPara('perfil')} aria-label="Abrir Meu Perfil">
-            <Avatar tamanho={74} />
-          </button>
+          <Pressable onPress={() => irTela('perfil')} accessibilityRole="button" accessibilityLabel="Abrir Meu Perfil">
+            <Avatar tamanho={64} />
+          </Pressable>
         )}
-      </div>
-      <div className="ev-cabecalho__centro">
-        <h1 className="ev-titulo">{titulo}</h1>
-        {subtitulo && <p className="ev-subtitulo">{subtitulo}</p>}
-      </div>
-      <div className="ev-cabecalho__dir">
-        {mostrarConfiguracoes && (
-          <button className="ev-btn-icone" onClick={() => acoes.irPara('configuracoes')} aria-label="Abrir Configurações">
-            <IconeEngrenagem />
-          </button>
+      </View>
+      <View style={estilos.cabCentro}>
+        <Text style={estilos.titulo} accessibilityRole="header">{titulo}</Text>
+        {subtitulo ? <Text style={estilos.subtitulo}>{subtitulo}</Text> : null}
+      </View>
+      <View style={[estilos.cabLado, estilos.cabLadoDir]}>
+        {mostrarEngrenagem && (
+          <Pressable style={estilos.iconeBtn} onPress={() => irTela('configuracoes')} accessibilityRole="button" accessibilityLabel="Abrir Configurações">
+            <Ionicons name="settings-sharp" size={30} color="#000" />
+          </Pressable>
         )}
-        {mostrarNotificacoes && (
-          <button
-            className="ev-btn-icone"
-            onClick={() => acoes.irPara('notificacoes')}
-            aria-label={naoLidas > 0 ? `Abrir Notificações (${naoLidas} não lidas)` : 'Abrir Notificações'}
+        {mostrarCarta && (
+          <Pressable
+            style={estilos.iconeBtn}
+            onPress={() => irTela('notificacoes')}
+            accessibilityRole="button"
+            accessibilityLabel={naoLidas > 0 ? `Abrir Notificações, ${naoLidas} não lidas` : 'Abrir Notificações'}
           >
-            <IconeEnvelope />
-            {naoLidas > 0 && <span className="ev-selo">{naoLidas}</span>}
-          </button>
+            <Ionicons name="mail-outline" size={34} color="#000" />
+            {naoLidas > 0 && (
+              <View style={estilos.selo}><Text style={estilos.seloTexto}>{naoLidas}</Text></View>
+            )}
+          </Pressable>
         )}
-      </div>
-    </header>
-  );
-}
-
-/* ---- Menu de Navegação inferior ----
- * Cinco botões. Cada um corresponde a uma rota:
- *   Home      → 'home'      (implementada aqui)
- *   Evolua    → 'evolua'    (página de outro colaborador)
- *   Chat      → 'chat'      (página de outro colaborador)
- *   Progresso → 'progresso' (página de outro colaborador)
- *   Saiba +   → 'saibaMais' (página de outro colaborador)
- * Para conectar uma página externa: passe-a em `paginasExternas` com o id da
- * rota (ex.: paginasExternas={{ chat: PaginaChat }}). Enquanto não houver
- * página registrada, aparece um placeholder neutro (PaginaExternaPlaceholder).
- * O botão da seção atual recebe aria-current="page" e destaque visual.
- * Perfil, Configurações e Notificações não marcam nenhum botão (como no design).
- */
-const ITENS_MENU: ReadonlyArray<{ rota: Rota; rotulo: string; Icone: () => JSX.Element }> = [
-  { rota: 'home', rotulo: 'Home', Icone: IconeMenuHome },
-  { rota: 'evolua', rotulo: 'Evolua', Icone: IconeMenuEvolua },
-  { rota: 'chat', rotulo: 'Chat', Icone: IconeMenuChat },
-  { rota: 'progresso', rotulo: 'Progresso', Icone: IconeMenuProgresso },
-  { rota: 'saibaMais', rotulo: 'Saiba +', Icone: IconeMenuSaiba },
-];
-
-function MenuNavegacao() {
-  const { estado, acoes } = useEvolua();
-  return (
-    <nav className="ev-menu" aria-label="Navegação principal">
-      {ITENS_MENU.map(({ rota, rotulo, Icone }) => (
-        <button
-          key={rota}
-          className="ev-menu__botao"
-          aria-current={estado.rota === rota ? 'page' : undefined}
-          onClick={() => acoes.irPara(rota)}
-        >
-          <Icone />
-          <span>{rotulo}</span>
-        </button>
-      ))}
-    </nav>
+      </View>
+    </View>
   );
 }
 
 /**
- * Placeholder exibido quando uma rota externa ainda não tem página registrada.
- * NÃO contém conteúdo de negócio: serve apenas para sinalizar o ponto de integração.
+ * ===========================================================================
+ * MENU INFERIOR (aba retangular azul com 5 botões)
+ *
+ * Cada botão leva a uma parte do app e já está codificado para ser clicado.
+ * Os comentários "BOTÃO ..." abaixo identificam cada um para os colaboradores.
+ *
+ * Props:
+ *   ativo              → qual botão aparece selecionado ('home', 'evolua', ...). null = nenhum.
+ *   aoPressionarHome   → opcional. Dentro de home.tsx volta para a tela Home interna;
+ *                        nas demais telas, deixe vazio para navegar até /principal/home.
+ * ===========================================================================
  */
-function PaginaExternaPlaceholder({ rota }: { rota: RotaExterna }) {
+export type ItemMenu = 'home' | 'evolua' | 'chat' | 'progresso' | 'saibaMais';
+
+export function MenuInferior({ ativo = null, aoPressionarHome }: { ativo?: ItemMenu | null; aoPressionarHome?: () => void }) {
+  const insets = useSafeAreaInsets();
+
+  /** Item do menu: ícone cinza (azul claro quando selecionado) + rótulo. */
+  const Item = ({ id, rotulo, icone, aoPressionar }: { id: ItemMenu; rotulo: string; icone: React.ComponentProps<typeof Ionicons>['name']; aoPressionar: () => void }) => {
+    const selecionado = ativo === id;
+    return (
+      <Pressable
+        style={[estilos.menuBotao, selecionado && estilos.menuBotaoAtivo]}
+        onPress={aoPressionar}
+        accessibilityRole="button"
+        accessibilityState={{ selected: selecionado }}
+        accessibilityLabel={rotulo}
+      >
+        <Ionicons name={icone} size={34} color={selecionado ? '#5CB2FF' : '#6D6D6D'} />
+        <Text style={[estilos.menuRotulo, selecionado && { fontWeight: '700' }]} numberOfLines={1}>{rotulo}</Text>
+      </Pressable>
+    );
+  };
+
   return (
-    <div className="ev-externa" role="status">
-      <p>
-        Ponto de integração: a página <strong>{rota}</strong> será conectada aqui.
-      </p>
-    </div>
+    <View style={[estilos.menu, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
+      {/* BOTÃO HOME: volta à página inicial (/principal/home). Já implementado neste arquivo. */}
+      <Item id="home" rotulo="Home" icone="home" aoPressionar={aoPressionarHome ?? (() => router.navigate('/principal/home' as Href))} />
+      {/* BOTÃO EVOLUA: abre /principal/evolua. A página (src/app/principal/evolua.tsx) é de outro colaborador. */}
+      <Item id="evolua" rotulo="Evolua" icone="moon" aoPressionar={() => router.navigate('/principal/evolua' as Href)} />
+      {/* BOTÃO CHAT: abre /principal/chat. A página (chat.tsx) é de outro colaborador. */}
+      <Item id="chat" rotulo="Chat" icone="chatbubbles" aoPressionar={() => router.navigate('/principal/chat' as Href)} />
+      {/* BOTÃO PROGRESSO: abre /principal/progresso. A página (progresso.tsx) é de outro colaborador. */}
+      <Item id="progresso" rotulo="Progresso" icone="stats-chart" aoPressionar={() => router.navigate('/principal/progresso' as Href)} />
+      {/* BOTÃO SAIBA +: abre /principal/saiba-mais. A página (saiba-mais.tsx) é de outro colaborador. */}
+      <Item id="saibaMais" rotulo="Saiba +" icone="bulb" aoPressionar={() => router.navigate('/principal/saiba-mais' as Href)} />
+    </View>
   );
 }
 
 /* =============================================================================
- * 9. PÁGINA HOME
+ * 9. DESLIZADOR DISCRETO
+ * -----------------------------------------------------------------------------
+ * Controle arrastável com N posições fixas. A bolinha NUNCA para entre dois
+ * pontos: ela sempre encaixa no centro de um dos N segmentos iguais.
+ *   - Emoção: N = 5 (cada segmento fica sob um rosto).
+ *   - Ansiedade / Estresse / Energia: N = 10 (valores 1 a 10).
+ * `indice` vai de 0 a N-1; null = ainda não escolhido (bolinha opaca no meio).
  * ========================================================================== */
 
-/** Cartões de atividades com rolagem horizontal, fade nas bordas e seta indicativa. */
-function CarrosselAtividades() {
-  const { acoes } = useEvolua();
-  const trilhoRef = useRef<HTMLDivElement>(null);
-  // posicao controla qual fade aparece: início (só direita), meio (ambos) ou fim (só esquerda).
-  const [posicao, setPosicao] = useState<'inicio' | 'meio' | 'fim'>('inicio');
-
-  const atualizarPosicao = useCallback(() => {
-    const el = trilhoRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    if (max <= 4) setPosicao('fim'); // tudo cabe: não há mais opções à direita
-    else if (el.scrollLeft <= 4) setPosicao('inicio');
-    else if (el.scrollLeft >= max - 4) setPosicao('fim');
-    else setPosicao('meio');
-  }, []);
-
-  useEffect(() => {
-    atualizarPosicao();
-    window.addEventListener('resize', atualizarPosicao);
-    return () => window.removeEventListener('resize', atualizarPosicao);
-  }, [atualizarPosicao]);
-
-  const rolarParaDireita = () => trilhoRef.current?.scrollBy({ left: 190, behavior: 'smooth' });
-
-  return (
-    <div className={`ev-carrossel ev-carrossel--${posicao}`}>
-      <div className="ev-carrossel__trilho" ref={trilhoRef} onScroll={atualizarPosicao} role="list">
-        {ATIVIDADES_HOME.map((a) => (
-          <button
-            key={a.rota}
-            role="listitem"
-            className="ev-atividade"
-            style={{ background: a.fundo, color: a.texto }}
-            // PONTO DE INTEGRAÇÃO: abre a página do colega registrada em paginasExternas[a.rota].
-            onClick={() => acoes.irPara(a.rota)}
-          >
-            {a.titulo}
-          </button>
-        ))}
-      </div>
-      <button className="ev-carrossel__seta" onClick={rolarParaDireita} aria-label="Ver mais atividades" tabIndex={posicao === 'fim' ? -1 : 0}>
-        <IconeSeta />
-      </button>
-    </div>
-  );
+interface PropsDeslizador {
+  quantidade: number;
+  indice: number | null;
+  onChange: (indice: number) => void;
+  trilha: React.ReactNode;      // desenho da barra (ocupa toda a largura)
+  rotulo: string;               // texto de acessibilidade
+  textoValor: (indice: number | null) => string;
 }
 
-/** Página inicial: boas-vindas, atividades e check-in emocional. */
-function PaginaHome() {
-  const { estado } = useEvolua();
-  const frase = useMemo(() => fraseDoDia(), []);
+const TAMANHO_BOLINHA = 38;
+
+function DeslizadorDiscreto({ quantidade, indice, onChange, trilha, rotulo, textoValor }: PropsDeslizador) {
+  const larguraRef = useRef(0);
+  const [largura, setLargura] = useState(0);
+  const inicioX = useRef(0);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const posX = useRef(new Animated.Value(0)).current;
+
+  const indiceDoX = useCallback((x: number): number => {
+    const w = larguraRef.current;
+    if (!w) return 0;
+    return Math.min(quantidade - 1, Math.max(0, Math.floor((x / w) * quantidade)));
+  }, [quantidade]);
+
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false, // impede o ScrollView de "roubar" o gesto
+      onPanResponderGrant: (e) => {
+        inicioX.current = e.nativeEvent.locationX;
+        onChangeRef.current(indiceDoX(inicioX.current));
+      },
+      onPanResponderMove: (_, g) => onChangeRef.current(indiceDoX(inicioX.current + g.dx)),
+    }),
+  ).current;
+
+  // Centro do segmento escolhido (ou meio da barra se nada foi escolhido).
+  useEffect(() => {
+    if (!largura) return;
+    const centro = indice === null ? largura / 2 : ((indice + 0.5) / quantidade) * largura;
+    Animated.timing(posX, { toValue: centro - TAMANHO_BOLINHA / 2, duration: 120, useNativeDriver: true }).start();
+  }, [indice, largura, quantidade, posX]);
+
+  const aoMedir = (e: LayoutChangeEvent) => {
+    larguraRef.current = e.nativeEvent.layout.width;
+    setLargura(e.nativeEvent.layout.width);
+  };
+
   return (
-    <>
-      <Cabecalho titulo="Home" mostrarFoto mostrarConfiguracoes mostrarNotificacoes />
-      <section className="ev-cartao" aria-labelledby="ev-saudacao">
-        {/* O apelido vem do estado compartilhado: mudou nas Configurações, muda aqui. */}
-        <h2 className="ev-saudacao" id="ev-saudacao">Olá, {estado.perfil.apelido}!</h2>
-        <p className="ev-frase">{frase}</p>
-        <h3 className="ev-secao-titulo">Suas atividades:</h3>
-        <CarrosselAtividades />
-      </section>
-      <CheckinEmocional />
-    </>
+    <View
+      {...pan.panHandlers}
+      onLayout={aoMedir}
+      style={estilos.deslizador}
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel={rotulo}
+      accessibilityValue={{ text: textoValor(indice) }}
+      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+      onAccessibilityAction={(e) => {
+        const atual = indice ?? Math.floor(quantidade / 2);
+        if (e.nativeEvent.actionName === 'increment') onChange(Math.min(quantidade - 1, atual + 1));
+        if (e.nativeEvent.actionName === 'decrement') onChange(Math.max(0, atual - 1));
+      }}
+    >
+      {/* pointerEvents="none": o toque é sempre recebido pelo contêiner, o que mantém locationX confiável. */}
+      <View pointerEvents="none" style={estilos.deslizadorInterno}>
+        {trilha}
+        <Animated.View style={[estilos.bolinha, indice === null && { opacity: 0.55 }, { transform: [{ translateX: posX }] }]} />
+      </View>
+    </View>
   );
 }
 
 /* =============================================================================
  * 10. CHECK-IN EMOCIONAL
- * -----------------------------------------------------------------------------
- * Fluxo: o usuário escolhe uma emoção (clicando no rosto OU arrastando o
- * indicador), ajusta ansiedade, estresse e energia (1–10) e toca em
- * "Salvar o meu dia". Então acoes.salvarCheckin() cria um RegistroCheckin
- * (formato e guia de uso na seção 4) e chama `onCheckinSalvo` para o backend.
  * ========================================================================== */
 
-/**
- * Indicador deslizante de emoção: barra com 5 segmentos coloridos e uma bolinha
- * que "encaixa" no segmento da emoção. Aceita arrastar (mouse/toque) e teclado
- * (setas). Índice 0 = muito feliz (lado "+") … 4 = muito triste (lado "−").
- */
-function IndicadorEmocao({ indice, onChange }: { indice: number | null; onChange: (i: number) => void }) {
-  const trilhaRef = useRef<HTMLDivElement>(null);
-  const arrastando = useRef(false);
-
-  const indiceDoPonteiro = (clientX: number): number => {
-    const caixa = trilhaRef.current!.getBoundingClientRect();
-    const proporcao = (clientX - caixa.left) / caixa.width;
-    return Math.min(4, Math.max(0, Math.floor(proporcao * 5)));
-  };
-
-  const aoPressionar = (e: React.PointerEvent<HTMLDivElement>) => {
-    arrastando.current = true;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    onChange(indiceDoPonteiro(e.clientX));
-  };
-  const aoMover = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (arrastando.current) onChange(indiceDoPonteiro(e.clientX));
-  };
-  const aoSoltar = () => { arrastando.current = false; };
-
-  const aoTeclar = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const atual = indice ?? 2;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); onChange(Math.max(0, atual - 1)); }
-    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); onChange(Math.min(4, atual + 1)); }
-  };
-
-  const posicaoPercentual = indice === null ? 50 : indice * 20 + 10; // centro do segmento
-
+/** Rostinhos do check-in (SVG). Cada rosto usa a cor da sua emoção. */
+function RostoEmocao({ chave, cor, tamanho }: { chave: EmocaoChave; cor: string; tamanho: number }) {
+  const tr = { stroke: CORES.azulMarinho, strokeWidth: 4, strokeLinecap: 'round' as const, fill: 'none' };
   return (
-    <div className="ev-escala-emocao">
-      <span className="ev-escala-emocao__sinal" style={{ color: CORES.roxoVibrante }} aria-hidden="true">+</span>
-      <div
-        className="ev-escala-emocao__trilha"
-        ref={trilhaRef}
-        role="slider"
-        tabIndex={0}
-        aria-label="Indicador de emoção"
-        aria-valuemin={0}
-        aria-valuemax={4}
-        aria-valuenow={indice ?? undefined}
-        aria-valuetext={indice === null ? 'Nenhuma emoção selecionada' : EMOCOES[indice].rotulo}
-        onPointerDown={aoPressionar}
-        onPointerMove={aoMover}
-        onPointerUp={aoSoltar}
-        onPointerCancel={aoSoltar}
-        onKeyDown={aoTeclar}
-      >
-        <div className="ev-escala-emocao__faixa" aria-hidden="true">
-          {EMOCOES.map((e) => (<span key={e.chave} style={{ background: e.cor }} />))}
-        </div>
-        <span className={`ev-polegar${indice === null ? ' ev-polegar--inativo' : ''}`} style={{ left: `${posicaoPercentual}%` }} />
-      </div>
-      <span className="ev-escala-emocao__sinal" style={{ color: CORES.turquesa }} aria-hidden="true">−</span>
-    </div>
+    <Svg width={tamanho} height={tamanho} viewBox="0 0 80 80">
+      <Circle cx={40} cy={40} r={39} fill={cor} />
+      {chave === 'muito_feliz' && (
+        <>
+          <Path d="M20 31q5-7 10 0M50 31q5-7 10 0" {...tr} />
+          <Path d="M20 46h40a20 18 0 0 1-40 0z" fill={CORES.azulMarinho} />
+        </>
+      )}
+      {chave === 'feliz' && (
+        <>
+          <Circle cx={29} cy={32} r={3.5} fill={CORES.azulMarinho} />
+          <Circle cx={51} cy={32} r={3.5} fill={CORES.azulMarinho} />
+          <Path d="M26 48q14 12 28 0" {...tr} />
+        </>
+      )}
+      {chave === 'neutro' && (
+        <>
+          <Circle cx={29} cy={32} r={3.5} fill={CORES.azulMarinho} />
+          <Circle cx={51} cy={32} r={3.5} fill={CORES.azulMarinho} />
+          <Path d="M27 52h26" {...tr} />
+        </>
+      )}
+      {chave === 'triste' && (
+        <>
+          <Circle cx={29} cy={32} r={3.5} fill={CORES.azulMarinho} />
+          <Circle cx={51} cy={32} r={3.5} fill={CORES.azulMarinho} />
+          <Path d="M26 56q14-12 28 0" {...tr} />
+        </>
+      )}
+      {chave === 'muito_triste' && (
+        <>
+          <Path d="M23 26l9 9M32 26l-9 9M48 26l9 9M57 26l-9 9" {...tr} strokeWidth={3.4} />
+          <Path d="M28 60a12 13 0 0 1 24 0z" fill={CORES.azulMarinho} />
+        </>
+      )}
+    </Svg>
   );
 }
 
-/** Controle numérico 1–10 (ansiedade, estresse ou energia). `valor` null = ainda não escolhido ("- /10"). */
-function EscalaNumerica({ id, rotulo, valor, onChange }: { id: string; rotulo: string; valor: number | null; onChange: (v: number) => void }) {
-  // Confirma o valor também ao soltar/teclar, pois o usuário pode tocar na bolinha já no 5 sem "mudar" o valor.
-  const confirmar = (e: React.SyntheticEvent<HTMLInputElement>) => onChange(Number(e.currentTarget.value));
+/** Bloco de um controle numérico (Ansiedade, Estresse ou Energia), valores 1 a 10 em 10 pontos fixos. */
+function EscalaNumerica({ rotulo, valor, onChange }: { rotulo: string; valor: number | null; onChange: (v: number) => void }) {
   return (
-    <div className="ev-escala-numerica">
-      <div className="ev-escala-numerica__linha">
-        <label className="ev-escala-numerica__rotulo" htmlFor={id}>{rotulo}</label>
-        <span className="ev-escala-numerica__valor" aria-live="polite">{valor ?? '-'} /10</span>
-      </div>
-      <input
-        id={id}
-        className={`ev-range${valor === null ? ' ev-range--inativo' : ''}`}
-        type="range"
-        min={1}
-        max={10}
-        step={1}
-        value={valor ?? 5}
-        onChange={confirmar}
-        onPointerUp={confirmar}
-        onKeyUp={confirmar}
+    <View style={estilos.escalaNum}>
+      <View style={estilos.escalaNumLinha}>
+        <Text style={estilos.escalaNumRotulo}>{rotulo}</Text>
+        <Text style={estilos.escalaNumValor} accessibilityLiveRegion="polite">{valor ?? '-'} /10</Text>
+      </View>
+      <DeslizadorDiscreto
+        quantidade={10}
+        indice={valor === null ? null : valor - 1}
+        onChange={(i) => onChange(i + 1)}
+        rotulo={rotulo}
+        textoValor={(i) => (i === null ? 'Não escolhido' : `${i + 1} de 10`)}
+        trilha={<View style={estilos.trilhaNumerica} />}
       />
-    </div>
+    </View>
   );
 }
 
-/** Cartão "Como está se sentindo hoje?" da Home. */
+/** Cartão "Como está se sentindo hoje?". */
 function CheckinEmocional() {
-  const { acoes } = useEvolua();
   const [indiceEmocao, setIndiceEmocao] = useState<number | null>(null);
   const [ansiedade, setAnsiedade] = useState<number | null>(null);
   const [estresse, setEstresse] = useState<number | null>(null);
@@ -1185,7 +853,6 @@ function CheckinEmocional() {
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 
   const salvar = () => {
-    // Validação: todos os campos precisam ter sido escolhidos pelo usuário.
     const faltando: string[] = [];
     if (indiceEmocao === null) faltando.push('a emoção');
     if (ansiedade === null) faltando.push('a ansiedade');
@@ -1195,7 +862,11 @@ function CheckinEmocional() {
       setAviso({ tipo: 'erro', texto: `Para salvar, escolha ${faltando.join(', ')}.` });
       return;
     }
-    const registro = acoes.salvarCheckin({
+    /* >>> AQUI O CHECK-IN É SALVO. <<<
+     * salvarCheckin() (seção 4) guarda o registro em estado.checkins.
+     * QUEM ESTIVER PROGRAMANDO O HISTÓRICO deve usar este ponto/estes dados
+     * (useCheckins) para listar o check-in salvo na página de histórico. */
+    const registro = salvarCheckin({
       emocao: EMOCOES[indiceEmocao as number].chave,
       ansiedade: ansiedade as number,
       estresse: estresse as number,
@@ -1205,272 +876,453 @@ function CheckinEmocional() {
       tipo: 'ok',
       texto: `Dia salvo em ${new Date(registro.criadoEmISO).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.`,
     });
-    // Reinicia o formulário para um novo registro.
     setIndiceEmocao(null); setAnsiedade(null); setEstresse(null); setEnergia(null);
   };
 
   return (
-    <section className="ev-cartao" aria-labelledby="ev-checkin-titulo">
-      <h2 className="ev-secao-titulo" id="ev-checkin-titulo" style={{ fontSize: 28 }}>Como está se sentindo hoje?</h2>
+    <View style={estilos.cartao}>
+      <Text style={estilos.secaoTitulo} accessibilityRole="header">Como está se sentindo hoje?</Text>
 
-      <div className="ev-emocoes" role="radiogroup" aria-label="Emoção de hoje">
-        {EMOCOES.map((e, i) => (
-          <button
-            key={e.chave}
-            className="ev-emocao"
-            role="radio"
-            aria-checked={indiceEmocao === i}
-            aria-label={e.rotulo}
-            title={e.rotulo}
-            onClick={() => setIndiceEmocao(i)}
-          >
-            <RostoEmocao chave={e.chave} cor={e.cor} />
-          </button>
-        ))}
-      </div>
+      {/* Rostos: 5 células iguais; o centro de cada uma fica alinhado ao segmento colorido da barra abaixo. */}
+      <View style={estilos.emocoesLinha} accessibilityRole="radiogroup">
+        {EMOCOES.map((e, i) => {
+          const selecionada = indiceEmocao === i;
+          return (
+            <Pressable
+              key={e.chave}
+              style={estilos.emocaoCelula}
+              onPress={() => setIndiceEmocao(i)}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selecionada }}
+              accessibilityLabel={e.rotulo}
+            >
+              <View style={[estilos.emocaoAnel, selecionada && estilos.emocaoAnelAtivo]}>
+                <RostoEmocao chave={e.chave} cor={e.cor} tamanho={50} />
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
 
-      <IndicadorEmocao indice={indiceEmocao} onChange={setIndiceEmocao} />
+      {/* Barra de emoção: cada segmento tem a MESMA cor do rosto acima dele. */}
+      <View style={estilos.emocaoBarraLinha}>
+        <Text style={[estilos.sinal, { color: CORES.roxoVibrante }]}>+</Text>
+        <View style={{ flex: 1 }}>
+          <DeslizadorDiscreto
+            quantidade={5}
+            indice={indiceEmocao}
+            onChange={setIndiceEmocao}
+            rotulo="Indicador de emoção"
+            textoValor={(i) => (i === null ? 'Nenhuma emoção selecionada' : EMOCOES[i].rotulo)}
+            trilha={
+              <View style={estilos.faixaEmocao}>
+                {EMOCOES.map((e) => (<View key={e.chave} style={{ flex: 1, backgroundColor: e.cor }} />))}
+              </View>
+            }
+          />
+        </View>
+        <Text style={[estilos.sinal, { color: CORES.turquesa }]}>–</Text>
+      </View>
 
-      <EscalaNumerica id="ev-ansiedade" rotulo="Ansiedade" valor={ansiedade} onChange={setAnsiedade} />
-      <EscalaNumerica id="ev-estresse" rotulo="Estresse" valor={estresse} onChange={setEstresse} />
-      <EscalaNumerica id="ev-energia" rotulo="Energia" valor={energia} onChange={setEnergia} />
+      <EscalaNumerica rotulo="Ansiedade" valor={ansiedade} onChange={setAnsiedade} />
+      <EscalaNumerica rotulo="Estresse" valor={estresse} onChange={setEstresse} />
+      <EscalaNumerica rotulo="Energia" valor={energia} onChange={setEnergia} />
 
-      <button className="ev-btn-primario" onClick={salvar}>Salvar o meu dia</button>
-      {aviso && <p className={`ev-aviso ev-aviso--${aviso.tipo}`} role="status">{aviso.texto}</p>}
-    </section>
+      <Pressable style={estilos.btnPrimario} onPress={salvar} accessibilityRole="button">
+        <Text style={estilos.btnPrimarioTexto}>Salvar o meu dia</Text>
+      </Pressable>
+      {aviso && (
+        <Text style={[estilos.aviso, aviso.tipo === 'ok' ? estilos.avisoOk : estilos.avisoErro]} accessibilityLiveRegion="polite">
+          {aviso.texto}
+        </Text>
+      )}
+    </View>
   );
 }
 
 /* =============================================================================
- * 11. PÁGINA MEU PERFIL
- * Nome, sobrenome, apelido e foto vêm do estado compartilhado (mesma fonte das
- * Configurações). A biografia é editada aqui e gravada no mesmo estado.
+ * 11. TELA HOME
  * ========================================================================== */
 
-/** Cartões de atividades do Perfil. Cada `rota` é um ponto de integração com outro colaborador. */
-const ATIVIDADES_PERFIL: ReadonlyArray<{ rota: RotaExterna; titulo: string; fundo: string }> = [
-  { rota: 'historicoCheckin', titulo: 'Chek-in Emocional', fundo: CORES.rosaVibrante },
-  { rota: 'evolucaoPessoal', titulo: 'Evolução Pessoal', fundo: CORES.azulProfundo },
-  { rota: 'questionarios', titulo: 'Questionarios', fundo: CORES.turquesa },
-  { rota: 'exercicios', titulo: 'Exercícios', fundo: CORES.laranja },
+const ATIVIDADES_HOME: ReadonlyArray<{ chave: ChaveAtividade; titulo: string; fundo: string; texto: string }> = [
+  { chave: 'evolucaoPessoal', titulo: 'Evolução Pessoal', fundo: CORES.azulEvolua, texto: CORES.branco },
+  { chave: 'questionarios', titulo: 'Meus Questionários', fundo: CORES.azulCeu, texto: CORES.azulMarinho },
+  { chave: 'metas', titulo: 'Minhas Metas', fundo: CORES.verdeAgua, texto: CORES.branco },
+  { chave: 'exercicios', titulo: 'Meus Exercícios', fundo: CORES.lavanda, texto: CORES.azulMarinho },
 ];
 
-function PaginaPerfil() {
-  const { estado, acoes } = useEvolua();
-  const { perfil } = estado;
+/**
+ * Carrossel horizontal de atividades. As bordas têm FADE (degradê para o branco
+ * do cartão): os cartões ficam "transparentes" ao sair da área visível. O botão
+ * circular indica que há mais atividades e rola a lista ao ser tocado.
+ */
+function CarrosselAtividades() {
+  const scrollRef = useRef<ScrollView>(null);
+  const deslocamento = useRef(0);
+  const [posicao, setPosicao] = useState<'inicio' | 'meio' | 'fim'>('inicio');
+  const medidas = useRef({ visivel: 0, conteudo: 0 });
+
+  const recalcular = (x: number) => {
+    deslocamento.current = x;
+    const max = medidas.current.conteudo - medidas.current.visivel;
+    if (max <= 4) setPosicao('fim');
+    else if (x <= 4) setPosicao('inicio');
+    else if (x >= max - 4) setPosicao('fim');
+    else setPosicao('meio');
+  };
+
+  const aoRolar = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    medidas.current = { visivel: e.nativeEvent.layoutMeasurement.width, conteudo: e.nativeEvent.contentSize.width };
+    recalcular(e.nativeEvent.contentOffset.x);
+  };
+
+  return (
+    <View>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={aoRolar}
+        onLayout={(e) => { medidas.current.visivel = e.nativeEvent.layout.width; recalcular(deslocamento.current); }}
+        onContentSizeChange={(w) => { medidas.current.conteudo = w; recalcular(deslocamento.current); }}
+        contentContainerStyle={{ gap: 10, paddingRight: 8 }}
+      >
+        {ATIVIDADES_HOME.map((a) => (
+          // PONTO DE INTEGRAÇÃO: o destino de cada cartão é definido em ROTAS_ATIVIDADES (seção 7).
+          <Pressable
+            key={a.chave}
+            style={[estilos.atividade, { backgroundColor: a.fundo }]}
+            onPress={() => abrirAtividade(a.chave)}
+            accessibilityRole="button"
+            accessibilityLabel={a.titulo}
+          >
+            <Text style={[estilos.atividadeTexto, { color: a.texto }]}>{a.titulo}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {/* Fade da direita (há mais atividades) e da esquerda (já rolou). */}
+      {posicao !== 'fim' && (
+        <LinearGradient pointerEvents="none" colors={['rgba(255,255,255,0)', '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[estilos.fade, { right: 0 }]} />
+      )}
+      {posicao !== 'inicio' && (
+        <LinearGradient pointerEvents="none" colors={['#FFFFFF', 'rgba(255,255,255,0)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[estilos.fade, { left: 0 }]} />
+      )}
+      {posicao !== 'fim' && (
+        <Pressable
+          style={estilos.setaCarrossel}
+          onPress={() => scrollRef.current?.scrollTo({ x: deslocamento.current + 120, animated: true })}
+          accessibilityRole="button"
+          accessibilityLabel="Ver mais atividades"
+        >
+          <Ionicons name="chevron-forward" size={24} color="#fff" />
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+function TelaHome() {
+  const apelido = useEvolua((e) => e.perfil.apelido);
+  const frase = useMemo(() => fraseDoDia(), []);
   return (
     <>
-      <Cabecalho titulo="Meu Perfil" mostrarConfiguracoes mostrarNotificacoes />
-
-      <section className="ev-cartao" aria-label="Dados do perfil">
-        <div className="ev-perfil__topo">
-          <Avatar tamanho={168} />
-        </div>
-        <h2 className="ev-perfil__nome">{perfil.nome} {perfil.sobrenome}</h2>
-        <p className="ev-perfil__apelido">{perfil.apelido}</p>
-        <label className="ev-perfil__bio-rotulo" htmlFor="ev-bio">Biografia:</label>
-        <textarea
-          id="ev-bio"
-          className="ev-perfil__bio"
-          placeholder="Apresente-se aqui!"
-          maxLength={500}
-          value={perfil.biografia}
-          onChange={(e) => acoes.atualizarPerfil({ biografia: e.target.value })}
-        />
-      </section>
-
-      <section className="ev-cartao" aria-labelledby="ev-ativ-perfil">
-        <h2 className="ev-secao-titulo" id="ev-ativ-perfil" style={{ fontSize: 30 }}>Suas Atividades aparecerão aqui</h2>
-        <div className="ev-grade-atividades">
-          {ATIVIDADES_PERFIL.map((a) => (
-            // PONTO DE INTEGRAÇÃO: cada cartão abre a página registrada em paginasExternas[a.rota].
-            <button key={a.rota} style={{ background: a.fundo }} onClick={() => acoes.irPara(a.rota)}>
-              {a.titulo}
-            </button>
-          ))}
-          <button className="ev-metas" style={{ background: CORES.verdeMenta, color: '#fff' }} onClick={() => acoes.irPara('metas')}>
-            <span>Metas</span>
-            <span className="ev-metas__barras" aria-hidden="true">
-              <span style={{ height: '45%' }} /><span style={{ height: '70%' }} /><span style={{ height: '100%' }} />
-            </span>
-          </button>
-        </div>
-        {/* Indicador "..." do design: apenas sinaliza que a seção é extensível. */}
-        <span className="ev-mais" aria-hidden="true">. . .</span>
-      </section>
+      <Cabecalho titulo="Home" mostrarFoto mostrarEngrenagem mostrarCarta />
+      <View style={estilos.cartao}>
+        {/* O apelido vem do store: mudou nas Configurações, muda aqui. */}
+        <Text style={estilos.saudacao}>Olá, {apelido}!</Text>
+        <Text style={estilos.frase}>{frase}</Text>
+        <Text style={estilos.secaoTitulo}>Suas atividades:</Text>
+        <CarrosselAtividades />
+      </View>
+      <CheckinEmocional />
     </>
   );
 }
 
 /* =============================================================================
- * 12. PÁGINA CONFIGURAÇÕES
- * Cada linha abre um painel (um por vez). Tudo que muda o perfil passa por
- * acoes.atualizarPerfil / acoes.atualizarContato, refletindo em todas as páginas.
- * Fluxos que dependem de servidor usam `servicos` (seção 5) e deixam isso
- * explícito na tela — nada de segurança simulada.
+ * 12. TELA MEU PERFIL
+ * ========================================================================== */
+
+function CartaoAtividadePerfil({ chave, titulo, fundo, estiloExtra, children }: { chave: ChaveAtividade; titulo: string; fundo: string; estiloExtra?: object; children?: React.ReactNode }) {
+  return (
+    <Pressable style={[estilos.cartaoPerfil, { backgroundColor: fundo }, estiloExtra]} onPress={() => abrirAtividade(chave)} accessibilityRole="button" accessibilityLabel={titulo}>
+      <Text style={estilos.cartaoPerfilTexto}>{titulo}</Text>
+      {children}
+    </Pressable>
+  );
+}
+
+function TelaPerfil() {
+  const perfil = useEvolua((e) => e.perfil);
+  return (
+    <>
+      <Cabecalho titulo="Meu Perfil" mostrarEngrenagem mostrarCarta />
+
+      <View style={estilos.cartao}>
+        <View style={estilos.perfilBanner}>
+          <View style={estilos.perfilFoto}><Avatar tamanho={110} /></View>
+        </View>
+        {/* Nome, sobrenome e apelido vêm do store (editados nas Configurações). */}
+        <Text style={estilos.perfilNome}>{perfil.nome} {perfil.sobrenome}</Text>
+        <Text style={estilos.perfilApelido}>{perfil.apelido}</Text>
+        <Text style={estilos.perfilBioRotulo}>Biografia:</Text>
+        <TextInput
+          style={estilos.perfilBio}
+          placeholder="Apresente-se aqui!"
+          placeholderTextColor={CORES.cinzaAzulado}
+          multiline
+          maxLength={500}
+          textAlignVertical="top"
+          value={perfil.biografia}
+          onChangeText={(t) => atualizarPerfil({ biografia: t })}
+          accessibilityLabel="Biografia"
+        />
+      </View>
+
+      <View style={estilos.cartao}>
+        <Text style={[estilos.secaoTitulo, { fontSize: 26 }]}>Suas Atividades aparecerão aqui</Text>
+        {/*
+         * BLOCOS DE ATIVIDADES DO PERFIL (para os demais colaboradores):
+         *  - "Chek-in Emocional": histórico dos check-ins → ligar a ROTAS_ATIVIDADES.checkinEmocional
+         *  - "Evolução Pessoal"  → ROTAS_ATIVIDADES.evolucaoPessoal
+         *  - "Questionarios"     → ROTAS_ATIVIDADES.questionarios
+         *  - "Exercícios"        → ROTAS_ATIVIDADES.exercicios
+         *  - "Metas"             → ROTAS_ATIVIDADES.metas
+         * Todos já são clicáveis; basta preencher os caminhos na seção 7.
+         */}
+        <View style={estilos.perfilGrade}>
+          <View style={{ flex: 1, gap: 12 }}>
+            <CartaoAtividadePerfil chave="checkinEmocional" titulo="Chek-in Emocional" fundo={CORES.rosaVibrante} />
+            <CartaoAtividadePerfil chave="questionarios" titulo="Questionarios" fundo={CORES.turquesa} />
+          </View>
+          <View style={{ flex: 1, gap: 12 }}>
+            <CartaoAtividadePerfil chave="evolucaoPessoal" titulo="Evolução Pessoal" fundo={CORES.azulProfundo} />
+            <CartaoAtividadePerfil chave="exercicios" titulo="Exercícios" fundo={CORES.laranja} />
+          </View>
+          <View style={{ flex: 0.8 }}>
+            <CartaoAtividadePerfil chave="metas" titulo="Metas" fundo={CORES.verdeMenta} estiloExtra={{ flex: 1, justifyContent: 'space-between', height: undefined }}>
+              <View style={estilos.metasBarras}>
+                <View style={[estilos.metasBarra, { height: '45%' }]} />
+                <View style={[estilos.metasBarra, { height: '70%' }]} />
+                <View style={[estilos.metasBarra, { height: '100%' }]} />
+              </View>
+            </CartaoAtividadePerfil>
+          </View>
+        </View>
+        {/* Indicador "..." do design (apenas visual: sinaliza que a seção é extensível). */}
+        <View style={estilos.maisIndicador}><Text style={estilos.maisTexto}>. . .</Text></View>
+      </View>
+    </>
+  );
+}
+
+/* =============================================================================
+ * 13. TELA CONFIGURAÇÕES
+ * -----------------------------------------------------------------------------
+ * Cada linha abre um painel (um por vez). Mudanças de perfil passam por
+ * atualizarPerfil/atualizarContato e refletem em todas as telas.
+ * O que depende de backend usa `servicos` (seção 5) e é sinalizado na tela.
+ * Nada de segurança é simulado.
  * ========================================================================== */
 
 type SecaoConfig = 'foto' | 'nome' | 'apelido' | 'nascimento' | 'genero' | 'telefone' | 'email' | 'senha';
 type AvisoConfig = { tipo: 'ok' | 'erro' | 'info'; texto: string };
+type OnAviso = (a: AvisoConfig) => void;
 
-interface PropsLinha {
-  id: SecaoConfig;
-  rotulo: string;
-  valor?: React.ReactNode;
-  aberta: boolean;
-  onAlternar: (id: SecaoConfig) => void;
-  children: React.ReactNode;
-}
-
-/** Linha da lista de configurações com painel expansível. */
-function LinhaConfig({ id, rotulo, valor, aberta, onAlternar, children }: PropsLinha) {
+function LinhaConfig({ rotulo, valor, aberta, onAlternar, children }: { rotulo: string; valor: React.ReactNode; aberta: boolean; onAlternar: () => void; children: React.ReactNode }) {
   return (
-    <div className={`ev-linha${aberta ? ' ev-linha--aberta' : ''}`}>
-      <button className="ev-linha__cabeca" aria-expanded={aberta} aria-controls={`ev-painel-${id}`} onClick={() => onAlternar(id)}>
-        <span className="ev-linha__rotulo">{rotulo}</span>
-        <span className={`ev-linha__valor${id === 'foto' ? ' ev-linha__valor--avatar' : ''}`}>{valor}</span>
-        <span className="ev-seta"><IconeSeta /></span>
-      </button>
-      {aberta && <div className="ev-linha__painel" id={`ev-painel-${id}`}>{children}</div>}
-    </div>
+    <View style={estilos.linha}>
+      <Pressable style={estilos.linhaCabeca} onPress={onAlternar} accessibilityRole="button" accessibilityState={{ expanded: aberta }} accessibilityLabel={rotulo}>
+        <Text style={estilos.linhaRotulo}>{rotulo}</Text>
+        <View style={estilos.linhaValorBox}>
+          {typeof valor === 'string' ? <Text style={estilos.linhaValor} numberOfLines={1}>{valor}</Text> : valor}
+        </View>
+        <View style={[estilos.seta, aberta && { transform: [{ rotate: '90deg' }] }]}>
+          <Ionicons name="chevron-forward" size={24} color="#fff" />
+        </View>
+      </Pressable>
+      {aberta && <View style={estilos.linhaPainel}>{children}</View>}
+    </View>
   );
 }
 
-/** Painel de foto: arquivos do dispositivo, galeria e arrastar-e-soltar. */
-function PainelFoto({ onAviso }: { onAviso: (a: AvisoConfig) => void }) {
-  const { acoes } = useEvolua();
-  const [arrastando, setArrastando] = useState(false);
-  const entradaArquivo = useRef<HTMLInputElement>(null);
-  const entradaGaleria = useRef<HTMLInputElement>(null);
+function Campo({ rotulo, ...props }: { rotulo: string } & React.ComponentProps<typeof TextInput>) {
+  return (
+    <View style={{ marginBottom: 10, flex: 1 }}>
+      <Text style={estilos.campoRotulo}>{rotulo}</Text>
+      <TextInput style={estilos.campo} placeholderTextColor={CORES.cinzaAzulado} accessibilityLabel={rotulo} {...props} />
+    </View>
+  );
+}
 
-  const processar = async (arquivo?: File | null) => {
-    if (!arquivo) return;
+function BotaoConfirmar({ texto, onPress, desabilitado }: { texto: string; onPress: () => void; desabilitado?: boolean }) {
+  return (
+    <Pressable style={[estilos.btnConfirmar, desabilitado && { opacity: 0.5 }]} onPress={onPress} disabled={desabilitado} accessibilityRole="button">
+      <Text style={estilos.btnConfirmarTexto}>{texto}</Text>
+    </Pressable>
+  );
+}
+function BotaoSecundario({ texto, onPress }: { texto: string; onPress: () => void }) {
+  return (
+    <Pressable style={estilos.btnSecundario} onPress={onPress} accessibilityRole="button">
+      <Text style={estilos.btnSecundarioTexto}>{texto}</Text>
+    </Pressable>
+  );
+}
+const AvisoBackend = ({ texto }: { texto: string }) => (
+  <Text style={estilos.dependencia}>Depende do backend: {texto}</Text>
+);
+
+/**
+ * Painel da FOTO: escolher imagem da galeria do celular ou, na versão web, do
+ * computador (o mesmo seletor abre o explorador de arquivos) e ARRASTAR E SOLTAR
+ * (somente web). Atualiza Home, Perfil e Notificações via atualizarPerfil.
+ * INTEGRAÇÃO: para guardar a foto no servidor, envie `fotoUrl` ao storage do
+ * backend (use aoMudarPerfil) e troque pela URL final.
+ */
+function PainelFoto({ onAviso }: { onAviso: OnAviso }) {
+  const [arrastando, setArrastando] = useState(false);
+
+  const aplicarUri = (uri: string, tamanho?: number) => {
+    if (tamanho && tamanho > TAMANHO_MAX_FOTO) { onAviso({ tipo: 'erro', texto: 'A imagem é grande demais. O limite é 5 MB.' }); return; }
+    atualizarPerfil({ fotoUrl: uri });
+    onAviso({ tipo: 'ok', texto: 'Foto de perfil atualizada.' });
+  };
+
+  const escolher = async () => {
     try {
-      const url = await lerImagem(arquivo);
-      acoes.atualizarPerfil({ fotoUrl: url }); // reflete em Home, Perfil e Notificações
-      onAviso({ tipo: 'ok', texto: 'Foto de perfil atualizada.' });
-    } catch (erro) {
-      onAviso({ tipo: 'erro', texto: (erro as Error).message });
+      const r = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!r.canceled && r.assets[0]) aplicarUri(r.assets[0].uri, r.assets[0].fileSize);
+    } catch {
+      onAviso({ tipo: 'erro', texto: 'Não foi possível abrir a galeria.' });
     }
   };
 
-  return (
-    <>
-      <div
-        className={`ev-zona${arrastando ? ' ev-zona--ativa' : ''}`}
-        onDragOver={(e) => { e.preventDefault(); setArrastando(true); }}
-        onDragLeave={() => setArrastando(false)}
-        onDrop={(e) => { e.preventDefault(); setArrastando(false); processar(e.dataTransfer.files?.[0]); }}
-      >
-        Arraste uma imagem para cá
-      </div>
-      {/* "Arquivos": seletor de arquivos do computador ou do celular. */}
-      <input ref={entradaArquivo} className="ev-oculto" type="file" accept={TIPOS_IMAGEM_ACEITOS.join(',')} aria-label="Escolher imagem do dispositivo"
-        onChange={(e) => { processar(e.target.files?.[0]); e.target.value = ''; }} />
-      {/* "Galeria": em celulares, accept="image/*" abre a galeria de fotos. */}
-      <input ref={entradaGaleria} className="ev-oculto" type="file" accept="image/*" aria-label="Escolher imagem da galeria"
-        onChange={(e) => { processar(e.target.files?.[0]); e.target.value = ''; }} />
-      <button className="ev-btn-secundario" onClick={() => entradaArquivo.current?.click()}>Escolher do dispositivo</button>
-      <button className="ev-btn-secundario" onClick={() => entradaGaleria.current?.click()}>Escolher da galeria</button>
-      {/* INTEGRAÇÃO: para guardar a foto no servidor, envie o arquivo ao storage e troque fotoUrl pela URL final. */}
-    </>
-  );
-}
-
-/** Painel de nome e sobrenome. */
-function PainelNome({ onAviso }: { onAviso: (a: AvisoConfig) => void }) {
-  const { estado, acoes } = useEvolua();
-  const [nome, setNome] = useState(estado.perfil.nome);
-  const [sobrenome, setSobrenome] = useState(estado.perfil.sobrenome);
-  const salvar = () => {
-    if (!nome.trim()) { onAviso({ tipo: 'erro', texto: 'Informe o nome.' }); return; }
-    acoes.atualizarPerfil({ nome: nome.trim(), sobrenome: sobrenome.trim() });
-    onAviso({ tipo: 'ok', texto: 'Nome atualizado.' });
+  // Arrastar e soltar: só existe na web. Usa um <div> do react-dom (disponível via react-native-web).
+  const aoSoltarWeb = (ev: any) => {
+    ev.preventDefault();
+    setArrastando(false);
+    const arquivo: File | undefined = ev.dataTransfer?.files?.[0];
+    if (!arquivo) return;
+    if (!arquivo.type.startsWith('image/')) { onAviso({ tipo: 'erro', texto: 'Solte um arquivo de imagem.' }); return; }
+    aplicarUri(URL.createObjectURL(arquivo), arquivo.size);
   };
+
   return (
-    <>
-      <h3>Insira seus dados:</h3>
-      <div className="ev-campos-duplos">
-        <label className="ev-campo">Nome<input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="given-name" /></label>
-        <label className="ev-campo">Sobrenome<input value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} autoComplete="family-name" /></label>
-      </div>
-      <button className="ev-btn-confirmar" onClick={salvar}>Salvar</button>
-    </>
+    <View>
+      {Platform.OS === 'web' &&
+        React.createElement(
+          'div',
+          {
+            onDragOver: (ev: any) => { ev.preventDefault(); setArrastando(true); },
+            onDragLeave: () => setArrastando(false),
+            onDrop: aoSoltarWeb,
+            style: {
+              border: `2px dashed ${arrastando ? CORES.azulEvolua : CORES.cinzaAzulado}`,
+              borderRadius: 14, padding: 18, textAlign: 'center', marginBottom: 12,
+              background: arrastando ? CORES.azulGelo : 'transparent', fontFamily: FONTES.texto,
+            },
+          },
+          'Arraste uma imagem para cá',
+        )}
+      <BotaoSecundario texto="Escolher da galeria ou do computador" onPress={escolher} />
+    </View>
   );
 }
 
-/** Painel de apelido. */
-function PainelApelido({ onAviso }: { onAviso: (a: AvisoConfig) => void }) {
-  const { estado, acoes } = useEvolua();
-  const [apelido, setApelido] = useState(estado.perfil.apelido);
-  const salvar = () => {
-    if (!apelido.trim()) { onAviso({ tipo: 'erro', texto: 'Informe um apelido.' }); return; }
-    acoes.atualizarPerfil({ apelido: apelido.trim() }); // atualiza a saudação da Home
-    onAviso({ tipo: 'ok', texto: 'Apelido atualizado.' });
-  };
+function PainelNome({ onAviso }: { onAviso: OnAviso }) {
+  const perfil = useEvolua((e) => e.perfil);
+  const [nome, setNome] = useState(perfil.nome);
+  const [sobrenome, setSobrenome] = useState(perfil.sobrenome);
   return (
-    <>
-      <h3>Insira seu apelido:</h3>
-      <label className="ev-campo">Apelido<input value={apelido} onChange={(e) => setApelido(e.target.value)} maxLength={30} autoComplete="nickname" /></label>
-      <button className="ev-btn-confirmar" onClick={salvar}>Salvar</button>
-    </>
+    <View>
+      <Text style={estilos.painelTitulo}>Insira seus dados:</Text>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <Campo rotulo="Nome" value={nome} onChangeText={setNome} autoComplete="given-name" />
+        <Campo rotulo="Sobrenome" value={sobrenome} onChangeText={setSobrenome} autoComplete="family-name" />
+      </View>
+      <BotaoConfirmar texto="Salvar" onPress={() => {
+        if (!nome.trim()) { onAviso({ tipo: 'erro', texto: 'Informe o nome.' }); return; }
+        atualizarPerfil({ nome: nome.trim(), sobrenome: sobrenome.trim() });
+        onAviso({ tipo: 'ok', texto: 'Nome atualizado.' });
+      }} />
+    </View>
   );
 }
 
-/** Painel de data de nascimento. */
-function PainelNascimento({ onAviso }: { onAviso: (a: AvisoConfig) => void }) {
-  const { estado, acoes } = useEvolua();
-  const [data, setData] = useState(estado.perfil.dataNascimento ?? '');
-  const salvar = () => {
-    if (data && data > dataLocalISO(new Date())) { onAviso({ tipo: 'erro', texto: 'A data de nascimento não pode estar no futuro.' }); return; }
-    acoes.atualizarPerfil({ dataNascimento: data || null });
-    onAviso({ tipo: 'ok', texto: 'Data de nascimento atualizada.' });
-  };
+function PainelApelido({ onAviso }: { onAviso: OnAviso }) {
+  const perfil = useEvolua((e) => e.perfil);
+  const [apelido, setApelido] = useState(perfil.apelido);
   return (
-    <>
-      <label className="ev-campo">Data de nascimento
-        <input type="date" value={data} max={dataLocalISO(new Date())} onChange={(e) => setData(e.target.value)} autoComplete="bday" />
-      </label>
-      <button className="ev-btn-confirmar" onClick={salvar}>Salvar</button>
-    </>
+    <View>
+      <Text style={estilos.painelTitulo}>Insira seu apelido:</Text>
+      <Campo rotulo="Apelido" value={apelido} onChangeText={setApelido} maxLength={30} />
+      <BotaoConfirmar texto="Salvar" onPress={() => {
+        if (!apelido.trim()) { onAviso({ tipo: 'erro', texto: 'Informe um apelido.' }); return; }
+        atualizarPerfil({ apelido: apelido.trim() }); // atualiza a saudação da Home
+        onAviso({ tipo: 'ok', texto: 'Apelido atualizado.' });
+      }} />
+    </View>
   );
 }
 
-/** Painel de gênero (grava ao escolher). */
-function PainelGenero({ onAviso }: { onAviso: (a: AvisoConfig) => void }) {
-  const { estado, acoes } = useEvolua();
+function PainelNascimento({ onAviso }: { onAviso: OnAviso }) {
+  const perfil = useEvolua((e) => e.perfil);
+  const [data, setData] = useState(perfil.dataNascimento ? formatarDataNascimento(perfil.dataNascimento) : '');
   return (
-    <div className="ev-opcoes" role="radiogroup" aria-label="Gênero">
+    <View>
+      <Text style={estilos.painelTitulo}>Insira sua data de nascimento:</Text>
+      <Campo rotulo="Data de nascimento" value={data} onChangeText={(t) => setData(mascararData(t))} keyboardType="number-pad" placeholder="DD/MM/AAAA" maxLength={10} />
+      <BotaoConfirmar texto="Salvar" onPress={() => {
+        if (!data) { atualizarPerfil({ dataNascimento: null }); onAviso({ tipo: 'ok', texto: 'Data removida.' }); return; }
+        const iso = dataBRparaISO(data);
+        if (!iso) { onAviso({ tipo: 'erro', texto: 'Informe uma data válida, que não esteja no futuro.' }); return; }
+        atualizarPerfil({ dataNascimento: iso });
+        onAviso({ tipo: 'ok', texto: 'Data de nascimento atualizada.' });
+      }} />
+    </View>
+  );
+}
+
+function PainelGenero({ onAviso }: { onAviso: OnAviso }) {
+  const genero = useEvolua((e) => e.perfil.genero);
+  return (
+    <View accessibilityRole="radiogroup">
       {GENEROS.map((g) => (
-        <label key={g.valor} className="ev-opcao">
-          <input
-            type="radio"
-            name="ev-genero"
-            checked={estado.perfil.genero === g.valor}
-            onChange={() => { acoes.atualizarPerfil({ genero: g.valor }); onAviso({ tipo: 'ok', texto: 'Gênero atualizado.' }); }}
-          />
-          {g.rotulo}
-        </label>
+        <Pressable
+          key={g.valor}
+          style={estilos.opcao}
+          onPress={() => { atualizarPerfil({ genero: g.valor }); onAviso({ tipo: 'ok', texto: 'Gênero atualizado.' }); }}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: genero === g.valor }}
+        >
+          <View style={estilos.radio}>{genero === g.valor && <View style={estilos.radioMiolo} />}</View>
+          <Text style={estilos.opcaoTexto}>{g.rotulo}</Text>
+        </Pressable>
       ))}
-    </div>
+    </View>
   );
 }
 
 /**
- * Painel de alteração de e-mail ou telefone, em duas etapas:
- *  1) o usuário informa o novo valor e solicita um código;
- *  2) o usuário digita o código recebido e confirma.
- * As DUAS etapas dependem do backend (servicos.solicitarCodigoAlteracaoContato /
- * servicos.confirmarAlteracaoContato). O contato só é alterado localmente se o
- * serviço confirmar ok — nunca antes.
+ * Alteração de e-mail ou telefone em duas etapas:
+ *  1) o usuário digita o novo valor → aviso de que um código de confirmação será enviado;
+ *  2) o usuário digita o código recebido para efetivar a alteração.
+ * As duas etapas dependem do backend; o contato só muda se o serviço confirmar.
  */
-function PainelContato({ tipo, onAviso }: { tipo: 'email' | 'telefone'; onAviso: (a: AvisoConfig) => void }) {
-  const { acoes, servicos } = useEvolua();
+function PainelContato({ tipo, onAviso }: { tipo: 'email' | 'telefone'; onAviso: OnAviso }) {
   const [novoValor, setNovoValor] = useState('');
   const [codigo, setCodigo] = useState('');
   const [etapa, setEtapa] = useState<'informar' | 'codigo'>('informar');
   const [ocupado, setOcupado] = useState(false);
-  const nomeCampo = tipo === 'email' ? 'e-mail' : 'telefone';
+  const nome = tipo === 'email' ? 'e-mail' : 'telefone';
 
   const solicitar = async () => {
     const valido = tipo === 'email' ? emailValido(novoValor) : telefoneValido(novoValor);
@@ -1478,7 +1330,7 @@ function PainelContato({ tipo, onAviso }: { tipo: 'email' | 'telefone'; onAviso:
     setOcupado(true);
     const r = await servicos.solicitarCodigoAlteracaoContato({ tipo, novoValor: novoValor.trim() });
     setOcupado(false);
-    if (r.ok) { setEtapa('codigo'); onAviso({ tipo: 'info', texto: r.mensagem ?? `Enviamos um código de verificação para o novo ${nomeCampo}.` }); }
+    if (r.ok) { setEtapa('codigo'); onAviso({ tipo: 'info', texto: r.mensagem ?? `Enviamos um código de confirmação para o novo ${nome}.` }); }
     else onAviso({ tipo: 'erro', texto: r.mensagem ?? 'Não foi possível solicitar o código.' });
   };
 
@@ -1488,48 +1340,50 @@ function PainelContato({ tipo, onAviso }: { tipo: 'email' | 'telefone'; onAviso:
     const r = await servicos.confirmarAlteracaoContato({ tipo, novoValor: novoValor.trim(), codigo: codigo.trim() });
     setOcupado(false);
     if (r.ok) {
-      acoes.atualizarContato(tipo === 'email' ? { email: novoValor.trim() } : { telefone: novoValor.trim() });
+      atualizarContato(tipo === 'email' ? { email: novoValor.trim() } : { telefone: novoValor.trim() });
       setNovoValor(''); setCodigo(''); setEtapa('informar');
       onAviso({ tipo: 'ok', texto: `${tipo === 'email' ? 'E-mail' : 'Telefone'} atualizado.` });
     } else onAviso({ tipo: 'erro', texto: r.mensagem ?? 'Código inválido.' });
   };
 
   return (
-    <>
-      <span className="ev-dependencia">Depende do backend: o envio e a validação do código são feitos pelo servidor.</span>
-      <label className="ev-campo">
-        Novo {nomeCampo}
-        <input
-          type={tipo === 'email' ? 'email' : 'tel'}
-          value={novoValor}
-          onChange={(e) => setNovoValor(e.target.value)}
-          disabled={etapa === 'codigo'}
-          autoComplete={tipo === 'email' ? 'email' : 'tel'}
-        />
-      </label>
+    <View>
+      <AvisoBackend texto="o envio e a validação do código de confirmação são feitos pelo servidor." />
+      <Campo
+        rotulo={`Novo ${nome}`}
+        value={novoValor}
+        onChangeText={setNovoValor}
+        editable={etapa === 'informar'}
+        keyboardType={tipo === 'email' ? 'email-address' : 'phone-pad'}
+        autoCapitalize="none"
+      />
       {etapa === 'informar' ? (
-        <button className="ev-btn-confirmar" onClick={solicitar} disabled={ocupado}>Enviar código</button>
+        <>
+          <Text style={estilos.painelTexto}>Será enviado um código de confirmação para o novo {nome}.</Text>
+          <BotaoConfirmar texto="Enviar código" onPress={solicitar} desabilitado={ocupado} />
+        </>
       ) : (
         <>
-          <label className="ev-campo">Código de verificação
-            <input value={codigo} onChange={(e) => setCodigo(e.target.value)} inputMode="numeric" autoComplete="one-time-code" />
-          </label>
-          <button className="ev-btn-confirmar" onClick={confirmar} disabled={ocupado}>Confirmar</button>
-          <button className="ev-btn-secundario" onClick={() => { setEtapa('informar'); setCodigo(''); }}>Cancelar</button>
+          <Campo rotulo="Código de confirmação" value={codigo} onChangeText={setCodigo} keyboardType="number-pad" />
+          <BotaoConfirmar texto="Confirmar" onPress={confirmar} desabilitado={ocupado} />
+          <BotaoSecundario texto="Cancelar" onPress={() => { setEtapa('informar'); setCodigo(''); }} />
         </>
       )}
-    </>
+    </View>
   );
 }
 
 /**
- * Painel de senha: alteração (senha atual + nova + confirmação) e recuperação
- * por e-mail ou telefone com código. Senhas ficam SOMENTE em estados locais do
- * componente e são enviadas ao backend; nunca vão para o estado compartilhado.
- * Todas as ações abaixo dependem de backend (servicos.*).
+ * Alteração de senha. Fluxo:
+ *  - Modo "alterar": senha atual + nova + confirmação. O SERVIDOR valida a senha atual;
+ *    se estiver correta a troca é feita. Se o usuário não lembra, usa "Esqueci minha senha".
+ *  - Modo "recuperar": escolhe receber o código por e-mail ou telefone → digita o código
+ *    → define a nova senha.
+ * Senhas ficam só em estados locais do componente e vão direto ao backend;
+ * NUNCA entram no store compartilhado.
+ * (As telas /acesso/recuperar-senha e /acesso/redefinir-senha, do login, são outro fluxo — sem usuário logado.)
  */
-function PainelSenha({ onAviso }: { onAviso: (a: AvisoConfig) => void }) {
-  const { servicos } = useEvolua();
+function PainelSenha({ onAviso }: { onAviso: OnAviso }) {
   const [modo, setModo] = useState<'alterar' | 'recuperar'>('alterar');
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -1553,7 +1407,7 @@ function PainelSenha({ onAviso }: { onAviso: (a: AvisoConfig) => void }) {
     const r = await servicos.alterarSenha({ senhaAtual, novaSenha });
     setOcupado(false);
     if (r.ok) { limpar(); onAviso({ tipo: 'ok', texto: 'Senha alterada.' }); }
-    else onAviso({ tipo: 'erro', texto: r.mensagem ?? 'Não foi possível alterar a senha.' });
+    else onAviso({ tipo: 'erro', texto: r.mensagem ?? 'Não foi possível alterar a senha. Confira a senha atual.' });
   };
 
   const enviarCodigo = async () => {
@@ -1575,312 +1429,332 @@ function PainelSenha({ onAviso }: { onAviso: (a: AvisoConfig) => void }) {
   };
 
   return (
-    <>
-      <span className="ev-dependencia">Depende do backend: a validação de senha e o envio de códigos são feitos pelo servidor.</span>
+    <View>
+      <AvisoBackend texto="a validação da senha e o envio de códigos são feitos pelo servidor." />
       {modo === 'alterar' ? (
         <>
-          <label className="ev-campo">Senha atual<input type="password" value={senhaAtual} onChange={(e) => setSenhaAtual(e.target.value)} autoComplete="current-password" /></label>
-          <label className="ev-campo">Nova senha<input type="password" value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} autoComplete="new-password" /></label>
-          <label className="ev-campo">Confirme a nova senha<input type="password" value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} autoComplete="new-password" /></label>
-          <button className="ev-btn-confirmar" onClick={alterar} disabled={ocupado}>Alterar senha</button>
-          <button className="ev-btn-secundario" onClick={() => { limpar(); setModo('recuperar'); }}>Esqueci minha senha</button>
+          <Campo rotulo="Senha atual" value={senhaAtual} onChangeText={setSenhaAtual} secureTextEntry autoCapitalize="none" autoComplete="current-password" />
+          <Campo rotulo="Nova senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
+          <Campo rotulo="Confirme a nova senha" value={confirmacao} onChangeText={setConfirmacao} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
+          <BotaoConfirmar texto="Alterar senha" onPress={alterar} desabilitado={ocupado} />
+          <BotaoSecundario texto="Esqueci minha senha" onPress={() => { limpar(); setModo('recuperar'); }} />
         </>
       ) : (
         <>
-          <h3>Recuperar senha</h3>
-          <div className="ev-opcoes" role="radiogroup" aria-label="Receber código por">
-            <label className="ev-opcao"><input type="radio" name="ev-canal" checked={canal === 'email'} onChange={() => setCanal('email')} disabled={codigoEnviado} />Receber código por e-mail</label>
-            <label className="ev-opcao"><input type="radio" name="ev-canal" checked={canal === 'telefone'} onChange={() => setCanal('telefone')} disabled={codigoEnviado} />Receber código por telefone</label>
-          </div>
+          <Text style={estilos.painelTitulo}>Receber o código por:</Text>
+          {(['email', 'telefone'] as const).map((c) => (
+            <Pressable key={c} style={estilos.opcao} onPress={() => !codigoEnviado && setCanal(c)} accessibilityRole="radio" accessibilityState={{ checked: canal === c, disabled: codigoEnviado }}>
+              <View style={estilos.radio}>{canal === c && <View style={estilos.radioMiolo} />}</View>
+              <Text style={estilos.opcaoTexto}>{c === 'email' ? 'E-mail' : 'Telefone'}</Text>
+            </Pressable>
+          ))}
           {!codigoEnviado ? (
-            <button className="ev-btn-confirmar" onClick={enviarCodigo} disabled={ocupado}>Enviar código</button>
+            <BotaoConfirmar texto="Enviar código" onPress={enviarCodigo} desabilitado={ocupado} />
           ) : (
             <>
-              <label className="ev-campo">Código de verificação<input value={codigo} onChange={(e) => setCodigo(e.target.value)} inputMode="numeric" autoComplete="one-time-code" /></label>
-              <label className="ev-campo">Nova senha<input type="password" value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} autoComplete="new-password" /></label>
-              <label className="ev-campo">Confirme a nova senha<input type="password" value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} autoComplete="new-password" /></label>
-              <button className="ev-btn-confirmar" onClick={redefinir} disabled={ocupado}>Redefinir senha</button>
+              <Campo rotulo="Código recebido" value={codigo} onChangeText={setCodigo} keyboardType="number-pad" />
+              <Campo rotulo="Nova senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
+              <Campo rotulo="Confirme a nova senha" value={confirmacao} onChangeText={setConfirmacao} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
+              <BotaoConfirmar texto="Redefinir senha" onPress={redefinir} desabilitado={ocupado} />
             </>
           )}
-          <button className="ev-btn-secundario" onClick={() => { limpar(); setModo('alterar'); }}>Voltar</button>
+          <BotaoSecundario texto="Voltar" onPress={() => { limpar(); setModo('alterar'); }} />
         </>
       )}
-    </>
+    </View>
   );
 }
 
-function PaginaConfiguracoes() {
-  const { estado, servicos, onLogout } = useEvolua();
-  const { perfil } = estado;
-  const [secaoAberta, setSecaoAberta] = useState<SecaoConfig | null>(null);
+function TelaConfiguracoes() {
+  const perfil = useEvolua((e) => e.perfil);
+  const [secao, setSecao] = useState<SecaoConfig | null>(null);
   const [aviso, setAviso] = useState<AvisoConfig | null>(null);
+  const alternar = (s: SecaoConfig) => { setSecao((a) => (a === s ? null : s)); setAviso(null); };
+  const props = (s: SecaoConfig) => ({ aberta: secao === s, onAlternar: () => alternar(s) });
 
-  const alternar = (id: SecaoConfig) => { setSecaoAberta((atual) => (atual === id ? null : id)); setAviso(null); };
-  const propsLinha = (id: SecaoConfig) => ({ id, aberta: secaoAberta === id, onAlternar: alternar });
-
-  /** Logout: depende do backend. Só chama onLogout se o serviço confirmar. */
+  /** Logout: depende do backend. Só sai (vai ao login) se o serviço confirmar. */
   const sair = async () => {
     const r = await servicos.encerrarSessao();
-    if (r.ok) onLogout?.();
+    if (r.ok) router.replace('/acesso/login' as Href);
     else setAviso({ tipo: 'erro', texto: r.mensagem ?? 'Não foi possível encerrar a sessão.' });
   };
 
   return (
     <>
-      <Cabecalho titulo="Configurações" mostrarConfiguracoes mostrarNotificacoes />
-      {aviso && <p className={`ev-aviso ev-aviso--${aviso.tipo}`} role="status" style={{ marginBottom: 12 }}>{aviso.texto}</p>}
-
-      <LinhaConfig {...propsLinha('foto')} rotulo="Foto" valor={<Avatar tamanho={94} />}>
-        <PainelFoto onAviso={setAviso} />
-      </LinhaConfig>
-      <LinhaConfig {...propsLinha('nome')} rotulo="Nome" valor={`${perfil.nome} ${perfil.sobrenome}`.trim()}>
-        <PainelNome onAviso={setAviso} />
-      </LinhaConfig>
-      <LinhaConfig {...propsLinha('apelido')} rotulo="Apelido" valor={perfil.apelido}>
-        <PainelApelido onAviso={setAviso} />
-      </LinhaConfig>
-      <LinhaConfig {...propsLinha('nascimento')} rotulo="Data de Nascimento" valor={formatarDataNascimento(perfil.dataNascimento)}>
-        <PainelNascimento onAviso={setAviso} />
-      </LinhaConfig>
-      <LinhaConfig {...propsLinha('genero')} rotulo="Gênero" valor={rotuloGenero(perfil.genero)}>
-        <PainelGenero onAviso={setAviso} />
-      </LinhaConfig>
-      <LinhaConfig {...propsLinha('telefone')} rotulo="Telefone" valor={perfil.contato.telefone}>
-        <PainelContato tipo="telefone" onAviso={setAviso} />
-      </LinhaConfig>
-      <LinhaConfig {...propsLinha('email')} rotulo="E-MAIL" valor={perfil.contato.email}>
-        <PainelContato tipo="email" onAviso={setAviso} />
-      </LinhaConfig>
-      <LinhaConfig {...propsLinha('senha')} rotulo="Senha" valor="Redefinir senha">
-        <PainelSenha onAviso={setAviso} />
-      </LinhaConfig>
-
-      <button className="ev-btn-logout" onClick={sair}>Fazer logout</button>
+      <Cabecalho titulo="Configurações" mostrarEngrenagem mostrarCarta />
+      {aviso && (
+        <Text style={[estilos.aviso, aviso.tipo === 'ok' ? estilos.avisoOk : aviso.tipo === 'erro' ? estilos.avisoErro : estilos.avisoInfo, { marginBottom: 12 }]} accessibilityLiveRegion="polite">
+          {aviso.texto}
+        </Text>
+      )}
+      <LinhaConfig {...props('foto')} rotulo="Foto" valor={<View style={{ alignItems: 'flex-end' }}><Avatar tamanho={60} /></View>}><PainelFoto onAviso={setAviso} /></LinhaConfig>
+      <LinhaConfig {...props('nome')} rotulo="Nome" valor={`${perfil.nome} ${perfil.sobrenome}`.trim()}><PainelNome onAviso={setAviso} /></LinhaConfig>
+      <LinhaConfig {...props('apelido')} rotulo="Apelido" valor={perfil.apelido}><PainelApelido onAviso={setAviso} /></LinhaConfig>
+      <LinhaConfig {...props('nascimento')} rotulo="Data de Nascimento" valor={formatarDataNascimento(perfil.dataNascimento)}><PainelNascimento onAviso={setAviso} /></LinhaConfig>
+      <LinhaConfig {...props('genero')} rotulo="Gênero" valor={rotuloGenero(perfil.genero)}><PainelGenero onAviso={setAviso} /></LinhaConfig>
+      <LinhaConfig {...props('telefone')} rotulo="Telefone" valor={perfil.contato.telefone}><PainelContato tipo="telefone" onAviso={setAviso} /></LinhaConfig>
+      <LinhaConfig {...props('email')} rotulo="E-MAIL" valor={perfil.contato.email}><PainelContato tipo="email" onAviso={setAviso} /></LinhaConfig>
+      <LinhaConfig {...props('senha')} rotulo="Senha" valor="Redefinir senha"><PainelSenha onAviso={setAviso} /></LinhaConfig>
+      <Pressable style={estilos.btnLogout} onPress={sair} accessibilityRole="button">
+        <Text style={estilos.btnLogoutTexto}>Fazer logout</Text>
+      </Pressable>
     </>
   );
 }
 
 /* =============================================================================
- * 13. PÁGINA NOTIFICAÇÕES
+ * 14. TELA NOTIFICAÇÕES
  * -----------------------------------------------------------------------------
  * Regras:
- *  - Abre na aba "Não Lidas" (preferencias.abaNotificacoesInicial).
- *  - Só vira "lida" quando o usuário ABRE o conteúdo (toque no cartão).
- *  - Ao abrir, mostra a mensagem completa + "Marcar como não lida" e "Arquivar".
- *  - O cartão aberto permanece visível até ser fechado ou a aba ser trocada;
- *    depois disso ele aparece na aba do seu novo status.
+ *  - Abre na aba "Não Lidas"; o usuário pode trocar para "Lidas" e "Arquivadas".
+ *  - Uma notificação só vira "lida" quando é ABERTA (toque no cartão).
+ *  - Aberta: mostra a mensagem completa e dois botões: "Marcar como não lida"
+ *    (volta para "Não Lidas") e "Arquivar" (vai para "Arquivadas").
+ *  - O cartão aberto permanece na tela até ser fechado ou a aba ser trocada.
+ *  - Prévia: uma linha, com reticências quando passa do fim do cartão.
  *
- * COMO CONECTAR AO BACKEND / FONTE DE DADOS:
- *  1. ENTRADA: carregue as notificações do servidor e passe em
- *     `notificacoesIniciais` (formato Notificacao). Para atualizar depois
- *     (ex.: push/polling), remonte o módulo com novos dados ou, se preferir, estenda
- *     o reducer com uma ação 'notificacao/substituirTodas'.
- *  2. SAÍDA: toda mudança de status (ler, marcar como não lida, arquivar) dispara
- *     `onNotificacoesAlteradas(lista)`. Persista no servidor lá (ex.: PATCH
- *     /notificacoes/:id { status }). A lista completa chega atualizada.
- *  3. Títulos, mensagens, datas e status ficam todos em `Notificacao`; editar
- *     NOTIFICACOES_EXEMPLO (seção 4) ou os dados vindos do backend basta.
+ * ONDE EDITAR TÍTULOS E MENSAGENS: constante NOTIFICACOES_EXEMPLO (seção 4) e,
+ * na renderização, os pontos marcados com "TÍTULO" e "MENSAGEM" em CartaoNotificacao.
+ *
+ * CONEXÃO COM O BACKEND:
+ *  - Entrada: inicializarDadosEvolua({ notificacoes }) com a lista do servidor.
+ *  - Saída: aoMudarNotificacoes((lista) => ...) recebe a lista atualizada a cada
+ *    mudança de status; persista no servidor (ex.: PATCH /notificacoes/:id).
  * ========================================================================== */
 
+type AbaNotificacoes = StatusNotificacao;
 const ABAS_NOTIFICACAO: ReadonlyArray<{ id: AbaNotificacoes; rotulo: string; vazio: string }> = [
   { id: 'nao_lida', rotulo: 'Não Lidas', vazio: 'Você não tem notificações não lidas.' },
   { id: 'lida', rotulo: 'Lidas', vazio: 'Você ainda não tem notificações lidas.' },
   { id: 'arquivada', rotulo: 'Arquivadas', vazio: 'Você não tem notificações arquivadas.' },
 ];
 
-function CartaoNotificacao({ notificacao, aberta, aoAlternar, aoMarcarNaoLida, aoArquivar }: {
-  notificacao: Notificacao;
-  aberta: boolean;
-  aoAlternar: () => void;
-  aoMarcarNaoLida: () => void;
-  aoArquivar: () => void;
+function CartaoNotificacao({ n, aberta, aoAlternar, aoMarcarNaoLida, aoArquivar }: {
+  n: Notificacao; aberta: boolean; aoAlternar: () => void; aoMarcarNaoLida: () => void; aoArquivar: () => void;
 }) {
-  const data = formatarDataNotificacao(notificacao.dataISO);
+  const data = formatarDataNotificacao(n.dataISO);
   return (
-    <article className={`ev-notif${aberta ? ' ev-notif--aberta' : ''}`}>
-      <button className="ev-notif__cabeca" aria-expanded={aberta} onClick={aoAlternar}>
-        <span className="ev-notif__texto">
-          <h3 className="ev-notif__titulo">{notificacao.titulo}</h3>
-          {/* Prévia: uma linha com reticências (CSS). Aberta: mensagem completa. */}
-          <p className={`ev-notif__msg ${aberta ? 'ev-notif__msg--completa' : 'ev-notif__msg--previa'}`}>{notificacao.mensagem}</p>
-          {data && <p className="ev-notif__data">{data}</p>}
-        </span>
-        <span className="ev-seta"><IconeSeta /></span>
-      </button>
+    <View style={estilos.notif}>
+      <Pressable style={estilos.notifCabeca} onPress={aoAlternar} accessibilityRole="button" accessibilityState={{ expanded: aberta }}>
+        <View style={{ flex: 1 }}>
+          {/* TÍTULO da notificação (vem de n.titulo) */}
+          <Text style={estilos.notifTitulo}>{n.titulo}</Text>
+          {/* MENSAGEM (vem de n.mensagem). Fechada: 1 linha com "..." no fim; aberta: texto completo. */}
+          <Text style={estilos.notifMsg} numberOfLines={aberta ? undefined : 1} ellipsizeMode="tail">{n.mensagem}</Text>
+          {data ? <Text style={estilos.notifData}>{data}</Text> : null}
+        </View>
+        <View style={[estilos.seta, aberta && { transform: [{ rotate: '90deg' }] }]}>
+          <Ionicons name="chevron-forward" size={24} color="#fff" />
+        </View>
+      </Pressable>
       {aberta && (
-        <div className="ev-notif__acoes">
-          <button className="ev-btn-secundario" onClick={aoMarcarNaoLida}>Marcar como “não lida”</button>
-          {notificacao.status !== 'arquivada' && <button className="ev-btn-secundario" onClick={aoArquivar}>Arquivar</button>}
-        </div>
+        <View style={estilos.notifAcoes}>
+          <BotaoSecundario texto="Marcar como “não lida”" onPress={aoMarcarNaoLida} />
+          {n.status !== 'arquivada' && <BotaoSecundario texto="Arquivar" onPress={aoArquivar} />}
+        </View>
       )}
-    </article>
+    </View>
   );
 }
 
-function PaginaNotificacoes() {
-  const { estado, acoes } = useEvolua();
-  const [aba, setAba] = useState<AbaNotificacoes>(estado.preferencias.abaNotificacoesInicial);
+function TelaNotificacoes() {
+  const notificacoes = useEvolua((e) => e.notificacoes);
+  const [aba, setAba] = useState<AbaNotificacoes>('nao_lida'); // sempre inicia em "Não Lidas"
   const [abertaId, setAbertaId] = useState<string | null>(null);
 
   const trocarAba = (nova: AbaNotificacoes) => { setAba(nova); setAbertaId(null); };
-
-  // Lista da aba atual. O cartão aberto é mantido na tela mesmo que seu status já tenha mudado.
-  const visiveis = estado.notificacoes.filter((n) => n.status === aba || n.id === abertaId);
+  const visiveis = notificacoes.filter((n) => n.status === aba || n.id === abertaId);
 
   const alternar = (n: Notificacao) => {
     if (abertaId === n.id) { setAbertaId(null); return; }
     setAbertaId(n.id);
-    // Regra: só passa a "lida" ao abrir o conteúdo. Arquivadas continuam arquivadas.
-    if (n.status === 'nao_lida') acoes.definirStatusNotificacao(n.id, 'lida');
+    if (n.status === 'nao_lida') definirStatusNotificacao(n.id, 'lida'); // só vira "lida" ao abrir
   };
-  const marcarNaoLida = (n: Notificacao) => { acoes.definirStatusNotificacao(n.id, 'nao_lida'); setAbertaId(null); };
-  const arquivar = (n: Notificacao) => { acoes.definirStatusNotificacao(n.id, 'arquivada'); setAbertaId(null); };
 
   return (
     <>
-      <Cabecalho titulo="Notificações" subtitulo="Suas notificações aparecerão aqui" mostrarFoto mostrarConfiguracoes />
-      <div className="ev-abas" role="tablist" aria-label="Categorias de notificações">
+      <Cabecalho titulo="Notificações" subtitulo="Suas notificações aparecerão aqui" mostrarFoto mostrarEngrenagem />
+      <View style={estilos.abas} accessibilityRole="tablist">
         {ABAS_NOTIFICACAO.map((a) => (
-          <button key={a.id} className="ev-aba" role="tab" aria-selected={aba === a.id} onClick={() => trocarAba(a.id)}>{a.rotulo}</button>
+          <Pressable key={a.id} style={[estilos.aba, aba === a.id && estilos.abaAtiva]} onPress={() => trocarAba(a.id)} accessibilityRole="tab" accessibilityState={{ selected: aba === a.id }}>
+            <Text style={[estilos.abaTexto, aba === a.id && { color: '#000' }]}>{a.rotulo}</Text>
+          </Pressable>
         ))}
-      </div>
-      <div role="tabpanel">
-        {visiveis.length === 0 ? (
-          <p className="ev-vazio">{ABAS_NOTIFICACAO.find((a) => a.id === aba)?.vazio}</p>
-        ) : (
-          visiveis.map((n) => (
-            <CartaoNotificacao
-              key={n.id}
-              notificacao={n}
-              aberta={abertaId === n.id}
-              aoAlternar={() => alternar(n)}
-              aoMarcarNaoLida={() => marcarNaoLida(n)}
-              aoArquivar={() => arquivar(n)}
-            />
-          ))
-        )}
-      </div>
+      </View>
+      {visiveis.length === 0 ? (
+        <Text style={estilos.vazio}>{ABAS_NOTIFICACAO.find((a) => a.id === aba)?.vazio}</Text>
+      ) : (
+        visiveis.map((n) => (
+          <CartaoNotificacao
+            key={n.id}
+            n={n}
+            aberta={abertaId === n.id}
+            aoAlternar={() => alternar(n)}
+            aoMarcarNaoLida={() => { definirStatusNotificacao(n.id, 'nao_lida'); setAbertaId(null); }}
+            aoArquivar={() => { definirStatusNotificacao(n.id, 'arquivada'); setAbertaId(null); }}
+          />
+        ))
+      )}
     </>
   );
 }
 
 /* =============================================================================
- * 14. COMPONENTE RAIZ DO MÓDULO
+ * 15. COMPONENTE DA ROTA (/principal/home)
  * ========================================================================== */
 
-/** Decide qual página mostrar com base em estado.rota. */
-function Roteador() {
-  const { estado, acoes, paginasExternas } = useEvolua();
-  const { rota } = estado;
-  switch (rota) {
-    case 'home': return <PaginaHome />;
-    case 'perfil': return <PaginaPerfil />;
-    case 'configuracoes': return <PaginaConfiguracoes />;
-    case 'notificacoes': return <PaginaNotificacoes />;
-    default: {
-      // Rota externa: usa a página do colega, se registrada; senão, o placeholder.
-      const Externa = paginasExternas?.[rota as RotaExterna];
-      return Externa ? <Externa rota={rota as RotaExterna} irPara={acoes.irPara} /> : <PaginaExternaPlaceholder rota={rota as RotaExterna} />;
-    }
-  }
-}
+export default function Home() {
+  const insets = useSafeAreaInsets();
+  const [tela, setTela] = useState<TelaInterna>('home');
+  const scrollRef = useRef<ScrollView>(null);
 
-/**
- * <ModuloHome />: monta o estado compartilhado, o roteamento interno e o menu.
- * Exemplo de uso pelo integrador:
- *
- *   <ModuloHome
- *     usuarioInicial={{ id: 'u1', nome: 'Ana', sobrenome: 'Lima', apelido: 'Aninha' }}
- *     paginasExternas={{ chat: PaginaChat, progresso: PaginaProgresso }}
- *     onCheckinSalvo={(r) => api.post('/checkins', r)}
- *     onPerfilAtualizado={(p) => api.put('/perfil', p)}
- *     servicos={servicosReais}
- *     onLogout={() => navegarParaLogin()}
- *   />
- */
-export function ModuloHome(props: PropsModuloHome) {
-  const {
-    usuarioInicial, notificacoesIniciais, checkinsIniciais, preferenciasIniciais, paginasExternas, servicos,
-    onCheckinSalvo, onPerfilAtualizado, onNotificacoesAlteradas, onNavegarExterno, onLogout, rotaInicial,
-  } = props;
+  const irTela = useCallback((t: TelaInterna) => {
+    setTela(t);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, []);
 
-  const [estado, dispatch] = useReducer(reducerEvolua, undefined, (): EstadoEvolua => ({
-    perfil: {
-      ...PERFIL_PADRAO,
-      ...usuarioInicial,
-      contato: { ...PERFIL_PADRAO.contato, ...usuarioInicial?.contato },
-    },
-    checkins: checkinsIniciais ?? [],
-    notificacoes: notificacoesIniciais ?? NOTIFICACOES_EXEMPLO,
-    preferencias: { ...PREFERENCIAS_PADRAO, ...preferenciasIniciais },
-    rota: rotaInicial ?? 'home',
-  }));
-
-  // Mantém o estado mais recente acessível às ações sem recriá-las a cada render.
-  const estadoRef = useRef(estado);
-  estadoRef.current = estado;
-
-  const acoes = useMemo<AcoesEvolua>(() => ({
-    irPara: (rota) => {
-      dispatch({ tipo: 'navegacao/ir', rota });
-      if ((ROTAS_EXTERNAS as ReadonlyArray<string>).includes(rota)) onNavegarExterno?.(rota as RotaExterna);
-      window.scrollTo?.({ top: 0 });
-    },
-    atualizarPerfil: (parcial) => dispatch({ tipo: 'perfil/atualizar', parcial }),
-    atualizarContato: (parcial) => dispatch({ tipo: 'perfil/atualizarContato', parcial }),
-    salvarCheckin: (dados) => {
-      const agora = new Date();
-      const nivel = EMOCOES.find((e) => e.chave === dados.emocao)?.nivel ?? 3;
-      const registro: RegistroCheckin = {
-        id: gerarId('checkin'),
-        usuarioId: estadoRef.current.perfil.id,
-        criadoEmISO: agora.toISOString(),
-        dataLocal: dataLocalISO(agora),
-        emocao: dados.emocao,
-        emocaoNivel: nivel,
-        ansiedade: dados.ansiedade,
-        estresse: dados.estresse,
-        energia: dados.energia,
-      };
-      dispatch({ tipo: 'checkin/adicionar', registro });
-      onCheckinSalvo?.(registro); // PONTO DE INTEGRAÇÃO: persistir no backend
-      return registro;
-    },
-    definirStatusNotificacao: (id, status) => dispatch({ tipo: 'notificacao/definirStatus', id, status }),
-  }), [onCheckinSalvo, onNavegarExterno]);
-
-  // Avisa o app hospedeiro quando perfil/notificações mudam (ignora a primeira renderização).
-  const primeiraRenderizacao = useRef(true);
+  // Botão "voltar" do Android: de Perfil/Configurações/Notificações volta para a Home.
   useEffect(() => {
-    if (primeiraRenderizacao.current) { primeiraRenderizacao.current = false; return; }
-    onPerfilAtualizado?.(estado.perfil);
-  }, [estado.perfil]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const primeiraNotificacao = useRef(true);
-  useEffect(() => {
-    if (primeiraNotificacao.current) { primeiraNotificacao.current = false; return; }
-    onNotificacoesAlteradas?.(estado.notificacoes);
-  }, [estado.notificacoes]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const valor = useMemo<ValorContexto>(() => ({
-    estado,
-    acoes,
-    servicos: servicos ?? servicosPadrao,
-    paginasExternas,
-    onLogout,
-  }), [estado, acoes, servicos, paginasExternas, onLogout]);
+    if (tela === 'home') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { irTela('home'); return true; });
+    return () => sub.remove();
+  }, [tela, irTela]);
 
   return (
-    <EvoluaContext.Provider value={valor}>
-      <style>{ESTILOS}</style>
-      <div className="ev-app">
-        <main className="ev-conteudo">
-          <Roteador />
-        </main>
-        <MenuNavegacao />
-      </div>
-    </EvoluaContext.Provider>
+    <NavegacaoContext.Provider value={{ irTela }}>
+      <View style={estilos.raiz}>
+        <LinearGradient colors={['#DDEAFE', '#E9F0FC', '#F7F9FF']} style={StyleSheet.absoluteFill} />
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: 14, paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {tela === 'home' && <TelaHome />}
+          {tela === 'perfil' && <TelaPerfil />}
+          {tela === 'configuracoes' && <TelaConfiguracoes />}
+          {tela === 'notificacoes' && <TelaNotificacoes />}
+        </ScrollView>
+        {/* Perfil, Configurações e Notificações não marcam nenhum botão (como no design). */}
+        <MenuInferior ativo={tela === 'home' ? 'home' : null} aoPressionarHome={() => irTela('home')} />
+      </View>
+    </NavegacaoContext.Provider>
   );
 }
 
-export default ModuloHome;
+/* =============================================================================
+ * ESTILOS
+ * ========================================================================== */
+
+const estilos = StyleSheet.create({
+  raiz: { flex: 1, backgroundColor: CORES.brancoAzulado },
+
+  /* Cabeçalho */
+  cabecalho: { flexDirection: 'row', alignItems: 'center', minHeight: 76, marginBottom: 8 },
+  cabLado: { width: 96, alignItems: 'flex-start' },
+  cabLadoDir: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  cabCentro: { flex: 1, alignItems: 'center' },
+  titulo: { fontFamily: FONTES.titulo, fontSize: 38, lineHeight: 42, color: '#000', textAlign: 'center' },
+  subtitulo: { fontFamily: FONTES.principal, fontSize: 13, color: '#000', textAlign: 'center' },
+  iconeBtn: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
+  selo: { position: 'absolute', top: 0, right: 0, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: '#FF2D55', alignItems: 'center', justifyContent: 'center' },
+  seloTexto: { color: '#fff', fontSize: 12, fontFamily: FONTES.texto, fontWeight: '700' },
+
+  /* Cartões e textos gerais */
+  cartao: { backgroundColor: '#fff', borderRadius: 18, padding: 14, marginBottom: 18 },
+  saudacao: { fontFamily: FONTES.principal, fontWeight: '700', fontSize: 32, color: '#000' },
+  frase: { fontFamily: FONTES.secundaria, fontSize: 15, color: '#000', marginTop: 2, marginBottom: 12 },
+  secaoTitulo: { fontFamily: FONTES.titulo, fontSize: 26, color: '#000', marginBottom: 8 },
+  aviso: { fontFamily: FONTES.texto, fontSize: 14, padding: 10, borderRadius: 10, marginTop: 12, overflow: 'hidden', color: CORES.azulMarinho },
+  avisoOk: { backgroundColor: CORES.verdeSuave },
+  avisoErro: { backgroundColor: '#FFE0E6' },
+  avisoInfo: { backgroundColor: CORES.azulGelo },
+
+  /* Carrossel */
+  atividade: { width: 104, height: 108, borderRadius: 12, padding: 8 },
+  atividadeTexto: { fontFamily: FONTES.secundaria, fontSize: 17, lineHeight: 20 },
+  fade: { position: 'absolute', top: 0, bottom: 0, width: 52 },
+  setaCarrossel: { position: 'absolute', right: 2, top: '50%', marginTop: -23, width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(75,85,99,0.55)', alignItems: 'center', justifyContent: 'center' },
+
+  /* Check-in */
+  emocoesLinha: { flexDirection: 'row', marginHorizontal: 26, marginTop: 4 },
+  emocaoCelula: { flex: 1, alignItems: 'center', paddingVertical: 8 },
+  emocaoAnel: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
+  emocaoAnelAtivo: { borderColor: CORES.azulProfundo, backgroundColor: '#fff' },
+  emocaoBarraLinha: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  sinal: { width: 26, fontSize: 26, fontWeight: '700', textAlign: 'center', fontFamily: FONTES.texto },
+  faixaEmocao: { flexDirection: 'row', height: 12, width: '100%' },
+  deslizador: { height: 46, justifyContent: 'center', width: '100%' },
+  deslizadorInterno: { height: TAMANHO_BOLINHA, justifyContent: 'center' },
+  bolinha: {
+    position: 'absolute', left: 0, top: 0, width: TAMANHO_BOLINHA, height: TAMANHO_BOLINHA, borderRadius: TAMANHO_BOLINHA / 2,
+    backgroundColor: CORES.cinzaGrafite, borderBottomWidth: 4, borderBottomColor: '#2B323C', elevation: 3,
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 3, shadowOffset: { width: 0, height: 2 },
+  },
+  trilhaNumerica: { height: 10, width: '100%', backgroundColor: CORES.azulProfundo, borderRadius: 2 },
+  escalaNum: { marginTop: 6 },
+  escalaNumLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 6 },
+  escalaNumRotulo: { fontFamily: FONTES.texto, fontSize: 20, color: '#000' },
+  escalaNumValor: { fontFamily: FONTES.texto, fontSize: 16, color: '#000' },
+  btnPrimario: { alignSelf: 'center', width: '72%', marginTop: 14, paddingVertical: 14, borderRadius: 10, backgroundColor: '#7FA0E3', alignItems: 'center' },
+  btnPrimarioTexto: { fontFamily: FONTES.texto, fontSize: 20, fontWeight: '700', color: '#fff' },
+
+  /* Perfil */
+  perfilBanner: { height: 150, borderRadius: 16, backgroundColor: CORES.rosaPastel },
+  perfilFoto: { position: 'absolute', left: 2, top: 20, borderWidth: 3, borderColor: '#000', borderRadius: 60, overflow: 'hidden' },
+  perfilNome: { fontFamily: FONTES.principal, fontWeight: '700', fontSize: 24, color: '#000', marginTop: 12, marginHorizontal: 12 },
+  perfilApelido: { fontFamily: FONTES.texto, fontSize: 14, color: '#000', marginHorizontal: 12 },
+  perfilBioRotulo: { fontFamily: FONTES.texto, fontSize: 15, color: '#000', marginTop: 10, marginHorizontal: 12, marginBottom: 4 },
+  perfilBio: { minHeight: 120, borderRadius: 18, backgroundColor: CORES.cinzaClaro, padding: 14, fontFamily: FONTES.texto, fontSize: 15, color: CORES.azulMarinho, marginHorizontal: 6, marginBottom: 6 },
+  perfilGrade: { flexDirection: 'row', gap: 12 },
+  cartaoPerfil: { borderRadius: 18, padding: 12, height: 100 },
+  cartaoPerfilTexto: { fontFamily: FONTES.secundaria, fontSize: 18, lineHeight: 20, color: '#fff' },
+  metasBarras: { flexDirection: 'row', alignItems: 'flex-end', gap: 5, height: '65%' },
+  metasBarra: { flex: 1, backgroundColor: CORES.verdeAgua, borderRadius: 3 },
+  maisIndicador: { alignSelf: 'center', width: 90, height: 52, borderRadius: 14, backgroundColor: CORES.cinzaClaro, alignItems: 'center', justifyContent: 'center', marginTop: 14 },
+  maisTexto: { color: '#fff', letterSpacing: 3, fontSize: 16 },
+
+  /* Configurações */
+  linha: { backgroundColor: '#fff', borderRadius: 18, marginBottom: 12, overflow: 'hidden' },
+  linhaCabeca: { flexDirection: 'row', alignItems: 'center', minHeight: 72, paddingHorizontal: 14, paddingVertical: 10, gap: 10 },
+  linhaRotulo: { fontFamily: FONTES.texto, fontSize: 18, color: CORES.azulMarinho, width: '36%' },
+  linhaValorBox: { flex: 1 },
+  linhaValor: { fontFamily: FONTES.secundaria, fontSize: 18, color: CORES.cinzaAzulado },
+  seta: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#A6A8AB', alignItems: 'center', justifyContent: 'center' },
+  linhaPainel: { paddingHorizontal: 14, paddingBottom: 16 },
+  painelTitulo: { fontFamily: FONTES.texto, fontSize: 16, color: CORES.azulMarinho, marginBottom: 8 },
+  painelTexto: { fontFamily: FONTES.texto, fontSize: 14, color: CORES.cinzaGrafite, marginBottom: 8 },
+  campoRotulo: { fontFamily: FONTES.texto, fontSize: 16, color: CORES.azulMarinho, marginBottom: 4 },
+  campo: { height: 44, borderRadius: 10, backgroundColor: CORES.cinzaClaro, paddingHorizontal: 12, fontFamily: FONTES.texto, fontSize: 16, color: CORES.azulMarinho },
+  btnConfirmar: { alignSelf: 'flex-start', backgroundColor: '#7FA0E3', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, marginTop: 4, marginRight: 8 },
+  btnConfirmarTexto: { fontFamily: FONTES.texto, fontSize: 16, fontWeight: '700', color: '#fff' },
+  btnSecundario: { alignSelf: 'flex-start', backgroundColor: CORES.cinzaClaro, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 16, marginTop: 8, marginRight: 8, elevation: 2, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, shadowOffset: { width: 0, height: 2 } },
+  btnSecundarioTexto: { fontFamily: FONTES.texto, fontSize: 15, color: CORES.azulMarinho },
+  dependencia: { fontFamily: FONTES.texto, fontSize: 12, backgroundColor: CORES.amareloPastel, borderRadius: 8, padding: 8, marginBottom: 10, overflow: 'hidden', color: CORES.azulMarinho },
+  opcao: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
+  opcaoTexto: { fontFamily: FONTES.texto, fontSize: 17, color: CORES.azulMarinho },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: CORES.azulEvolua, alignItems: 'center', justifyContent: 'center' },
+  radioMiolo: { width: 11, height: 11, borderRadius: 6, backgroundColor: CORES.azulEvolua },
+  btnLogout: { alignSelf: 'center', width: '84%', marginTop: 14, paddingVertical: 18, borderRadius: 12, backgroundColor: '#4C566A', alignItems: 'center' },
+  btnLogoutTexto: { fontFamily: FONTES.texto, fontSize: 18, color: '#fff' },
+
+  /* Notificações */
+  abas: { flexDirection: 'row', gap: 16, paddingHorizontal: 6, marginBottom: 16 },
+  aba: { flex: 1, borderRadius: 4, paddingVertical: 3, backgroundColor: '#4C566A', alignItems: 'center' },
+  abaAtiva: { backgroundColor: '#94A3B8' },
+  abaTexto: { fontFamily: FONTES.texto, fontSize: 16, color: '#fff' },
+  notif: { backgroundColor: '#fff', borderRadius: 18, marginBottom: 12, paddingHorizontal: 14, paddingBottom: 12 },
+  notifCabeca: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 12 },
+  notifTitulo: { fontFamily: FONTES.principal, fontSize: 22, color: '#000' },
+  notifMsg: { fontFamily: FONTES.texto, fontSize: 17, color: CORES.cinzaAzulado, marginTop: 2 },
+  notifData: { fontFamily: FONTES.texto, fontSize: 12, color: CORES.cinzaAzulado, marginTop: 6 },
+  notifAcoes: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
+  vazio: { fontFamily: FONTES.texto, fontSize: 16, color: CORES.cinzaGrafite, textAlign: 'center', marginVertical: 56, marginHorizontal: 20 },
+
+  /* Menu inferior */
+  menu: { flexDirection: 'row', gap: 8, backgroundColor: '#7FA0E3', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 16, paddingHorizontal: 12 },
+  menuBotao: { flex: 1, height: 72, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  menuBotaoAtivo: { borderBottomWidth: 4, borderBottomColor: '#5CB2FF' },
+  menuRotulo: { fontFamily: FONTES.texto, fontSize: 11, color: CORES.azulMarinho },
+});
