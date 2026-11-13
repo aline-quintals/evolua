@@ -30,7 +30,20 @@ export const cores = {
   cinzaClaro: '#E2E8F0',
   branco: '#FFFFFF',
   brancoAzulado: '#F7F9FF',
-};
+
+  // Emoções
+  muitoFeliz: '#FFB800',
+  muitoFelizPastel: '#FFF0B8',
+  feliz: '#32C98B',
+  felizPastel: '#C9F3DF',
+  neutro: '#5599E8',
+  neutroPastel: '#D5E8FF',
+  triste: '#9872E8',
+  tristePastel: '#E5D9FF',
+  muitoTriste: '#F06483',
+  muitoTristePastel: '#FFD5DF',
+  };
+
 
 export const fontes = {
   titulo: 'ManropeBold',

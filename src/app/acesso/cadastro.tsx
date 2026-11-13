@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
     fontFamily: fontes.texto,
     marginTop: 'auto',
     paddingTop: 18,
-    color: cores.roxoVibrante,
+    color: cores.branco,
     fontSize: 12,
     textAlign: 'center',
   },
