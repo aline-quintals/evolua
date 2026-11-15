@@ -1471,5 +1471,3 @@ export const estilos = StyleSheet.create({
   menuBotao: { flex: 1, borderRadius: 0, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 2 },
   menuBotaoAtivo: { backgroundColor: 'rgba(255, 255, 255, 0.42)', borderRadius: 0, borderBottomWidth: 3, borderBottomColor: '#397FB5' },
 });
-
-

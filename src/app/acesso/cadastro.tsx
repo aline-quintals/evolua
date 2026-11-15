@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cores, fontes } from '../../tema';
+import { definirCadastroPendente } from './termos-de-uso';
 
 const COR_ERRO = '#B3261E';
 
@@ -351,10 +352,11 @@ export default function Cadastro() {
       return;
     }
 
-    // TODO: aqui entra o envio dos dados para o servidor.
-    // Por enquanto, só leva para o login.
+    // Dados corretos: vai para os Termos de Uso.
+    // O cadastro só é concluído (e enviado ao servidor) depois do aceite.
     setEnviando(false);
-    router.replace('/acesso/login');
+    definirCadastroPendente(dados);
+    router.push('/acesso/termos-de-uso');
   };
 
   return (

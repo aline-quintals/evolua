@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, G, Mask, Rect } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -98,6 +98,11 @@ export default function Login() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  // A tela de termos de uso manda "cadastro=ok" quando a conta acabou de ser criada
+  const { cadastro } = useLocalSearchParams<{ cadastro?: string }>();
+  const [avisoFechado, setAvisoFechado] = useState(false);
+  const mostrarAviso = cadastro === 'ok' && !avisoFechado;
+
   const [usuario, setUsuario] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -132,6 +137,26 @@ export default function Login() {
 
           <Text style={styles.titulo}>Bem vindo(a)!</Text>
           <Text style={styles.subtitulo}>Acesse sua conta</Text>
+
+          {/* Aviso: cadastro criado com sucesso */}
+          {mostrarAviso ? (
+            <View style={styles.avisoSucesso} accessibilityLiveRegion="polite">
+              <Ionicons name="checkmark-circle" size={30} color={cores.verdeAgua} />
+              <View style={styles.avisoSucessoTextos}>
+                <Text style={styles.avisoSucessoTitulo}>Cadastro criado com sucesso!</Text>
+                <Text style={styles.avisoSucessoTexto}>
+                  Agora faça o login com o seu usuário e a sua senha.
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setAvisoFechado(true)}
+                hitSlop={10}
+                accessibilityLabel="Fechar aviso"
+              >
+                <Ionicons name="close" size={22} color={cores.cinzaGrafite} />
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           {/* Usuário */}
           <View style={[styles.campo, foco === 'usuario' && styles.campoFoco]}>
@@ -247,6 +272,38 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: cores.brancoAzulado,
     marginBottom: 30,
+  },
+
+  // Aviso de cadastro criado com sucesso
+  avisoSucesso: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    borderLeftWidth: 5,
+    borderLeftColor: cores.verdeAgua,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: -10,
+    marginBottom: 26,
+  },
+  avisoSucessoTextos: {
+    flex: 1,
+  },
+  avisoSucessoTitulo: {
+    fontFamily: fontes.textoMedio,
+    fontSize: 16,
+    color: cores.azulMarinho,
+  },
+  avisoSucessoTexto: {
+    fontFamily: fontes.texto,
+    fontSize: 14,
+    lineHeight: 19,
+    color: cores.cinzaGrafite,
+    marginTop: 2,
   },
 
   campo: {
