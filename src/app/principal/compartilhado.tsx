@@ -1164,31 +1164,35 @@ export function CarrosselAtividades() {
 
 export function TelaHome() {
   const apelido = useEvolua((e) => e.perfil.apelido);
-  const { estreito, desktop } = useLayoutInfo();
+  const biografia = useEvolua((e) => e.perfil.biografia);
+  const { desktop } = useLayoutInfo();
   const frase = useMemo(() => fraseDoDia(), []);
 
   const cartaoSaudacao = (
     <View style={estilos.homeIntro}>
-
       {/* Foto do perfil ao lado da saudação (sem clique) */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 0 }}>
-
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 4 }}>
         <View style={estilos.avatarCabecalho}>
           <Avatar tamanho={desktop ? 68 : 60} />
         </View>
 
-        <View style={{ flex: 1 }}>
-          <Text
-            style={[
-              estilos.saudacao,
-              { fontSize: desktop ? 34 : estreito ? 25 : 28 }
-            ]}
-            numberOfLines={2}
-          >
-            Olá, {apelido}!
-          </Text>
-        </View>
+        <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start' }}>
+          <Text style={estilos.tituloSaudacao}>Olá, {apelido}!</Text>
 
+          {!!biografia?.trim() && (
+            <Text
+              style={{
+                fontSize: 13,
+                fontStyle: 'italic',
+                color: '#8293A8',
+                marginTop: 5,
+                lineHeight: 19,
+              }}
+            >
+              “{biografia}”
+            </Text>
+          )}
+        </View>
       </View>
 
       <Text style={[estilos.frase, desktop && { fontSize: 17, lineHeight: 24 }]}>
@@ -1198,7 +1202,6 @@ export function TelaHome() {
       <Text style={estilos.secaoTitulo}>Suas atividades:</Text>
 
       {desktop ? <GradeAtividades /> : <CarrosselAtividades />}
-
     </View>
   );
 
@@ -1209,10 +1212,7 @@ export function TelaHome() {
 
       {desktop ? (
         <View style={estilos.duasColunas}>
-          <View style={{ flex: 1 }}>
-            {cartaoSaudacao}
-          </View>
-
+          <View style={{ flex: 1 }}>{cartaoSaudacao}</View>
           <View style={{ flex: 1.1 }}>
             <CheckinEmocional />
           </View>
@@ -1234,6 +1234,9 @@ export const estilos = StyleSheet.create({
   /** Impede o navegador de rolar a página quando o dedo/mouse arrasta o deslizador. */
   semGestoNativo: Platform.OS === 'web' ? ({ touchAction: 'none', userSelect: 'none' } as unknown as ViewStyle) : {},
   duasColunas: { flexDirection: 'row', gap: 20, alignItems: 'flex-start' },
+
+  saudacao: { fontFamily: fontes.titulo, color: cores.azulMarinho },
+  tituloSaudacao: { fontFamily: fontes.titulo, fontSize: 26, lineHeight: 32, color: cores.azulMarinho },
 
   /* Cabeçalho */
   cabecalho: { flexDirection: 'row', alignItems: 'center', minHeight: 72, marginBottom: 12 },

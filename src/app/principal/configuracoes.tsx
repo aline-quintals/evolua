@@ -79,7 +79,6 @@ import {
   senhaLocal,
   senhaAtualCorreta,
   definirSenhaLocal,
-  sairDaConta,
   excluirContaLocal,
   gerarId,
   dataLocalISO,
@@ -96,8 +95,6 @@ import {
   ChaveAtividade,
   ROTAS_ATIVIDADES,
   abrirAtividade,
-  NavegacaoContext,
-  useNavegacao,
   Avatar,
   BotaoDestaque,
   BotaoSalvarDia,
@@ -205,16 +202,21 @@ export default function TelaConfiguracoes() {
   const perfil = useEvolua((e) => e.perfil);
   const { desktop } = useLayoutInfo();
 
-  // Rascunho do formulário (só vale ao salvar).
+  const [secaoAberta, setSecaoAberta] = useState<string | null>(null);
+  const [senhaAberta, setSenhaAberta] = useState(false);
+
   const [fotoUrl, setFotoUrl] = useState<string | null>(perfil.fotoUrl);
   const [nome, setNome] = useState(perfil.nome);
   const [sobrenome, setSobrenome] = useState(perfil.sobrenome);
   const [apelido, setApelido] = useState(perfil.apelido);
   const [usuario, setUsuario] = useState(perfil.usuario);
+  const [biografia, setBiografia] = useState(perfil.biografia ?? '');
   const [data, setData] = useState(formatarDataNascimento(perfil.dataNascimento));
   const [genero, setGenero] = useState<Genero>(perfil.genero);
+
   const [telefone, setTelefone] = useState(perfil.contato.telefone);
   const [email, setEmail] = useState(perfil.contato.email);
+
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmacao, setConfirmacao] = useState('');
@@ -223,153 +225,356 @@ export default function TelaConfiguracoes() {
 
   const erro = (texto: string) => setAviso({ tipo: 'erro', texto });
 
-  const salvar = () => {
+  const salvarDados = () => {
     if (!nome.trim()) return erro('Informe o nome.');
     if (!apelido.trim()) return erro('Informe um apelido.');
     if (usuario.trim().length < 3 || /\s/.test(usuario)) {
       return erro('O usuário precisa ter pelo menos 3 caracteres, sem espaços.');
     }
+
     let nascimentoISO: string | null = null;
     if (data) {
       nascimentoISO = dataBRparaISO(data);
-      if (!nascimentoISO) return erro('Informe uma data de nascimento válida, que não esteja no futuro.');
+      if (!nascimentoISO) {
+        return erro('Informe uma data de nascimento válida, que não esteja no futuro.');
+      }
     }
-    if (telefone !== perfil.contato.telefone && !telefoneValido(telefone)) return erro('Informe um telefone com DDD.');
-    if (email !== perfil.contato.email && !emailValido(email)) return erro('Informe um e-mail válido.');
 
-    const querTrocarSenha = Boolean(senhaAtual || novaSenha || confirmacao);
-    if (querTrocarSenha) {
-      if (!senhaAtual) return erro('Para trocar a senha, informe a senha atual.');
-      if (!senhaAtualCorreta(senhaAtual)) return erro('A senha atual está incorreta.');
-      if (novaSenha.length < 8 || !/[^A-Za-z0-9]/.test(novaSenha)) return erro('A nova senha precisa ter 8 caracteres e pelo menos 1 caractere especial.');
-      if (novaSenha !== confirmacao) return erro('A confirmação não é igual à nova senha.');
+    if (telefone !== perfil.contato.telefone && !telefoneValido(telefone)) {
+      return erro('Informe um telefone com DDD.');
+    }
+    if (email !== perfil.contato.email && !emailValido(email)) {
+      return erro('Informe um e-mail válido.');
     }
 
     atualizarPerfil({
       fotoUrl,
       nome: nome.trim(),
       sobrenome: sobrenome.trim(),
-      apelido: apelido.trim(), // atualiza a saudação da Home
+      apelido: apelido.trim(),
       usuario: usuario.trim(),
+      biografia: biografia.trim(),
       dataNascimento: nascimentoISO,
       genero,
       contato: { email: email.trim(), telefone: telefone.trim() },
     });
-    if (querTrocarSenha) {
-      definirSenhaLocal(novaSenha);
-      setSenhaAtual(''); setNovaSenha(''); setConfirmacao('');
-    }
-    setAviso({ tipo: 'ok', texto: querTrocarSenha ? 'Alterações salvas e senha atualizada.' : 'Alterações salvas.' });
+
+    setAviso({ tipo: 'ok', texto: 'Dados atualizados com sucesso.' });
   };
 
-  const descartar = () => {
-    setFotoUrl(perfil.fotoUrl); setNome(perfil.nome); setSobrenome(perfil.sobrenome); setApelido(perfil.apelido);
+  const alterarSenha = () => {
+    if (!senhaAtual) return erro('Informe sua senha atual.');
+    if (!senhaAtualCorreta(senhaAtual)) return erro('A senha atual está incorreta.');
+    if (novaSenha.length < 8 || !/[^A-Za-z0-9]/.test(novaSenha)) {
+      return erro('A nova senha precisa ter pelo menos 8 caracteres e 1 caractere especial.');
+    }
+    if (novaSenha !== confirmacao) {
+      return erro('A confirmação não corresponde à nova senha.');
+    }
+
+    definirSenhaLocal(novaSenha);
+    setSenhaAtual('');
+    setNovaSenha('');
+    setConfirmacao('');
+    setSenhaAberta(false);
+    setAviso({ tipo: 'ok', texto: 'Senha atualizada com sucesso.' });
+  };
+
+  const descartarDados = () => {
+    setFotoUrl(perfil.fotoUrl);
+    setNome(perfil.nome);
+    setSobrenome(perfil.sobrenome);
+    setApelido(perfil.apelido);
     setUsuario(perfil.usuario);
-    setData(formatarDataNascimento(perfil.dataNascimento)); setGenero(perfil.genero);
-    setTelefone(perfil.contato.telefone); setEmail(perfil.contato.email);
-    setSenhaAtual(''); setNovaSenha(''); setConfirmacao('');
+    setBiografia(perfil.biografia ?? '');
+    setData(formatarDataNascimento(perfil.dataNascimento));
+    setGenero(perfil.genero);
+    setTelefone(perfil.contato.telefone);
+    setEmail(perfil.contato.email);
     setAviso(null);
   };
 
-  const cartaoDados = (
-    <View style={estilos.cartao}>
-      <Text style={estilos.secaoTitulo}>Dados pessoais</Text>
-      <Text style={estilos.campoRotulo}>Foto</Text>
+  const limparCamposSenha = () => {
+    setSenhaAtual('');
+    setNovaSenha('');
+    setConfirmacao('');
+    setAviso(null);
+  };
+
+  const secao = (id: string, titulo: string, conteudo: React.ReactNode, perigo = false) => {
+    const aberta = secaoAberta === id;
+    return (
+      <View style={[estilos.cartao, perigo && estilos.cartaoPerigo, { padding: 0, overflow: 'hidden' }]}>
+        <Pressable
+          onPress={() => {
+            setSecaoAberta(aberta ? null : id);
+            setAviso(null);
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: aberta }}
+          style={{
+            minHeight: 66,
+            paddingHorizontal: 18,
+            paddingVertical: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Text style={[estilos.secaoTitulo, { marginBottom: 0, fontSize: 18 }]}>
+            {titulo}
+          </Text>
+          <Ionicons
+            name={aberta ? 'chevron-up' : 'chevron-down'}
+            size={21}
+            color={cores.azulEvolua}
+          />
+        </Pressable>
+        {aberta && (
+          <View style={{ paddingHorizontal: 18, paddingBottom: 18 }}>
+            <View style={{ height: 1, backgroundColor: cores.cinzaClaro, marginBottom: 16 }} />
+            {conteudo}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const conteudoDados = (
+    <>
+      <Text style={estilos.painelTexto}>
+        Personalize as informações que identificam seu perfil no Evolua.
+      </Text>
+      <Text style={estilos.campoRotulo}>Foto de perfil</Text>
       <CampoFoto uri={fotoUrl} onChange={setFotoUrl} onErro={erro} />
+
       <View style={estilos.linhaCampos}>
         <Campo meia rotulo="Nome" value={nome} onChangeText={setNome} autoComplete="name-given" />
         <Campo meia rotulo="Sobrenome" value={sobrenome} onChangeText={setSobrenome} autoComplete="name-family" />
       </View>
+
       <Campo rotulo="Apelido" value={apelido} onChangeText={setApelido} maxLength={30} />
-      <Campo rotulo="Usuário" value={usuario} onChangeText={setUsuario} autoCapitalize="none" autoCorrect={false} maxLength={30} />
-      <Campo rotulo="Data de nascimento" value={data} onChangeText={(t) => setData(mascararData(t))} keyboardType="number-pad" placeholder="DD/MM/AAAA" maxLength={10} />
-      <Text style={estilos.campoRotulo}>Gênero</Text>
+      <Campo
+        rotulo="Nome de usuário"
+        value={usuario}
+        onChangeText={setUsuario}
+        autoCapitalize="none"
+        autoCorrect={false}
+        maxLength={30}
+      />
+      <Campo
+        rotulo="Data de nascimento (opcional)"
+        value={data}
+        onChangeText={(t) => setData(mascararData(t))}
+        keyboardType="number-pad"
+        placeholder="DD/MM/AAAA"
+        maxLength={10}
+      />
+
+      <Text style={estilos.campoRotulo}>Gênero (opcional)</Text>
       <View style={estilos.chips} accessibilityRole="radiogroup">
         {GENEROS.map((g) => {
           const ativo = genero === g.valor;
           return (
-            <Pressable key={g.valor} style={[estilos.chip, ativo && estilos.chipAtivo]} onPress={() => setGenero(g.valor)} accessibilityRole="radio" accessibilityState={{ checked: ativo }}>
-              <Text style={[estilos.chipTexto, ativo && { color: cores.branco }]}>{g.rotulo}</Text>
+            <Pressable
+              key={g.valor}
+              style={[estilos.chip, ativo && estilos.chipAtivo]}
+              onPress={() => setGenero(g.valor)}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: ativo }}
+            >
+              <Text style={[estilos.chipTexto, ativo && { color: cores.branco }]}>
+                {g.rotulo}
+              </Text>
             </Pressable>
           );
         })}
       </View>
-    </View>
+
+      <Campo
+        rotulo="Biografia (opcional)"
+        value={biografia}
+        onChangeText={setBiografia}
+        multiline
+        numberOfLines={3}
+        maxLength={160}
+        placeholder="Conte um pouco sobre você..."
+        style={[estilos.campo, { minHeight: 84, textAlignVertical: 'top' }]}
+      />
+
+      <View style={estilos.acoesForm}>
+        <BotaoDestaque texto="Salvar alterações" onPress={salvarDados} />
+        <BotaoSecundario texto="Descartar alterações" onPress={descartarDados} />
+      </View>
+    </>
   );
 
-  const cartaoContato = (
-    <View style={estilos.cartao}>
-      <Text style={estilos.secaoTitulo}>Contato</Text>
-      <Campo rotulo="Telefone" value={telefone} onChangeText={(t) => setTelefone(mascararTelefone(t))} keyboardType="phone-pad" autoComplete="tel" placeholder="(11) 90000-0000" />
-      <Campo rotulo="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" placeholder="voce@email.com" />
-    </View>
+  const conteudoContato = (
+    <>
+      <Text style={estilos.painelTexto}>
+        Mantenha seus dados de contato atualizados.
+      </Text>
+      <Campo
+        rotulo="Telefone"
+        value={telefone}
+        onChangeText={(t) => setTelefone(mascararTelefone(t))}
+        keyboardType="phone-pad"
+        autoComplete="tel"
+        placeholder="(11) 90000-0000"
+      />
+      <Campo
+        rotulo="E-mail"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        placeholder="voce@email.com"
+      />
+      <BotaoDestaque texto="Salvar alterações" onPress={salvarDados} />
+    </>
   );
 
-  const cartaoSenha = (
-    <View style={estilos.cartao}>
-      <Text style={estilos.secaoTitulo}>Senha</Text>
-      <Text style={estilos.painelTexto}>Deixe em branco para manter a senha atual.</Text>
-      <Campo rotulo="Senha atual" value={senhaAtual} onChangeText={setSenhaAtual} secureTextEntry autoCapitalize="none" autoComplete="current-password" />
-      <Campo rotulo="Nova senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
-      <Campo rotulo="Confirme a nova senha" value={confirmacao} onChangeText={setConfirmacao} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
-    </View>
+  const conteudoSeguranca = (
+    <>
+      <Text style={estilos.painelTexto}>
+        Gerencie sua senha e consulte as informações sobre a privacidade dos seus dados.
+      </Text>
+      <Pressable
+        onPress={() => setSenhaAberta((aberta) => !aberta)}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: senhaAberta }}
+        style={{
+          minHeight: 52,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: 10,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={estilos.campoRotulo}>Alterar senha</Text>
+          <Text style={[estilos.painelTexto, { marginBottom: 0 }]}>
+            Atualize sua senha de acesso.
+          </Text>
+        </View>
+        <Ionicons
+          name={senhaAberta ? 'chevron-up' : 'chevron-down'}
+          size={20}
+          color={cores.azulEvolua}
+        />
+      </Pressable>
+
+      {senhaAberta && (
+        <View style={{ marginTop: 10 }}>
+          <Campo
+            rotulo="Senha atual"
+            value={senhaAtual}
+            onChangeText={setSenhaAtual}
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="current-password"
+          />
+          <Campo
+            rotulo="Nova senha"
+            value={novaSenha}
+            onChangeText={setNovaSenha}
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="new-password"
+          />
+          <Text style={estilos.painelTexto}>
+            Use pelo menos 8 caracteres e inclua ao menos 1 caractere especial.
+          </Text>
+          <Campo
+            rotulo="Confirme a nova senha"
+            value={confirmacao}
+            onChangeText={setConfirmacao}
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="new-password"
+          />
+          <View style={estilos.acoesForm}>
+            <BotaoDestaque texto="Atualizar senha" onPress={alterarSenha} />
+            <BotaoSecundario texto="Limpar campos" onPress={limparCamposSenha} />
+          </View>
+        </View>
+      )}
+
+      <View style={{ marginTop: 16 }}>
+        <Text style={estilos.painelTexto}>
+          Seus registros emocionais e demais informações pessoais devem ser tratados com privacidade.
+          Consulte os Termos de Uso e a Política de Privacidade do Evolua para conhecer como os dados são utilizados.
+        </Text>
+      </View>
+    </>
   );
 
-  const cartaoExcluir = (
-    <View style={[estilos.cartao, estilos.cartaoPerigo]}>
-      <Text style={estilos.secaoTitulo}>Excluir conta</Text>
-      <Text style={estilos.painelTexto}>Ao excluir a conta, seu perfil, seus check-ins e suas notificações são apagados e você volta para a tela de login. Essa ação não pode ser desfeita.</Text>
+  const conteudoConta = (
+    <>
+      <Text style={estilos.painelTexto}>
+        Se desejar, você pode solicitar a exclusão da conta e dos dados armazenados neste protótipo.
+      </Text>
       {!confirmandoExclusao ? (
-        <Pressable style={estilos.btnPerigo} onPress={() => setConfirmandoExclusao(true)} accessibilityRole="button">
+        <Pressable
+          style={estilos.btnPerigo}
+          onPress={() => setConfirmandoExclusao(true)}
+          accessibilityRole="button"
+        >
           <Ionicons name="trash-outline" size={20} color={cores.azulMarinho} />
           <Text style={estilos.btnPerigoTexto}>Excluir minha conta</Text>
         </Pressable>
       ) : (
         <View>
-          <Text style={[estilos.painelTitulo, { marginTop: 4 }]}>Tem certeza que quer excluir a conta?</Text>
+          <Text style={[estilos.painelTitulo, { marginTop: 4 }]}>
+            Tem certeza que deseja excluir a conta?
+          </Text>
+          <Text style={estilos.painelTexto}>
+            Essa ação apaga o perfil, os check-ins e as notificações armazenados localmente e não pode ser desfeita.
+          </Text>
           <View style={estilos.linhaBotoes}>
-            <Pressable style={estilos.btnPerigoConfirmar} onPress={excluirContaLocal} accessibilityRole="button">
+            <Pressable
+              style={estilos.btnPerigoConfirmar}
+              onPress={excluirContaLocal}
+              accessibilityRole="button"
+            >
               <Text style={estilos.btnPerigoConfirmarTexto}>Sim, excluir</Text>
             </Pressable>
-            <BotaoSecundario texto="Cancelar" onPress={() => setConfirmandoExclusao(false)} />
+            <BotaoSecundario
+              texto="Cancelar"
+              onPress={() => setConfirmandoExclusao(false)}
+            />
           </View>
         </View>
       )}
-    </View>
+    </>
   );
 
   return (
     <>
-      <Cabecalho titulo="Configurações" />
-      {desktop ? (
-        <View style={estilos.duasColunas}>
-          <View style={{ flex: 1 }}>{cartaoDados}</View>
-          <View style={{ flex: 1 }}>{cartaoContato}{cartaoSenha}</View>
-        </View>
-      ) : (
-        <>
-          {cartaoDados}
-          {cartaoContato}
-          {cartaoSenha}
-        </>
-      )}
+      <Cabecalho titulo="Configurações" subtitulo="Gerencie seu perfil e sua conta" />
 
       {aviso && (
-        <Text style={[estilos.aviso, aviso.tipo === 'ok' ? estilos.avisoOk : estilos.avisoErro, { marginTop: 0, marginBottom: 14 }]} accessibilityLiveRegion="polite">
+        <Text
+          style={[
+            estilos.aviso,
+            aviso.tipo === 'ok' ? estilos.avisoOk : estilos.avisoErro,
+            { marginTop: 0, marginBottom: 14 },
+          ]}
+          accessibilityLiveRegion="polite"
+        >
           {aviso.texto}
         </Text>
       )}
-      <View style={estilos.acoesForm}>
-        <BotaoDestaque texto="Salvar alterações" onPress={salvar} />
-        <BotaoSecundario texto="Descartar alterações" onPress={descartar} />
+
+      <View style={desktop ? { maxWidth: 760, width: '100%', alignSelf: 'center' } : undefined}>
+        {secao('dados', 'Dados pessoais', conteudoDados)}
+        {secao('contato', 'Contato', conteudoContato)}
+        {secao('seguranca', 'Segurança e privacidade', conteudoSeguranca)}
+        {secao('conta', 'Gerenciamento da conta', conteudoConta, true)}
       </View>
 
-      {cartaoExcluir}
       <BotaoVoltar />
     </>
   );
 }
-
-
-
-
