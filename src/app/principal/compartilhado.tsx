@@ -43,7 +43,7 @@ import { cores, fontes } from '../../tema';
 
 export type Genero = 'homem' | 'mulher' | 'outro' | 'nao_informar';
 
-/** Dados do usuário. Fonte única da verdade para Home, Perfil, Configurações e Notificações. */
+/** Dados do usuário. Fonte única da verdade para Home, Configurações e Notificações. */
 export interface PerfilUsuario {
   id: string;
   nome: string;
@@ -90,7 +90,7 @@ export interface EstadoEvolua {
 }
 
 /** Telas internas deste arquivo. */
-export type TelaInterna = 'home' | 'perfil' | 'configuracoes' | 'notificacoes';
+export type TelaInterna = 'home' | 'configuracoes' | 'notificacoes';
 
 export type IconeNome = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -181,9 +181,8 @@ export function useTecladoVisivel(): boolean {
  * Qualquer arquivo pode importar os hooks/funções exportados daqui.
  *
  * O QUE CADA TELA FAZ COM ELE:
- *   - Trocar a foto (Configurações)  → atualiza Home, Perfil e Notificações.
- *   - Trocar o apelido               → atualiza "Olá, [apelido]!" na Home e o Perfil.
- *   - Trocar nome/sobrenome          → atualiza o Perfil.
+ *   - Trocar a foto (Configurações)  → atualiza Home e Notificações.
+ *   - Trocar o apelido               → atualiza "Olá, [apelido]!" na Home.
  *   - Salvar um check-in             → entra em estado.checkins (ver guia abaixo).
  *   - Mudar status de notificação    → muda a aba em que ela aparece.
  *
@@ -196,15 +195,15 @@ export function useTecladoVisivel(): boolean {
 /** Valores iniciais de PLACEHOLDER. Substitua com inicializarDadosEvolua(). */
 export const PERFIL_PADRAO: PerfilUsuario = {
   id: 'usuario-local',
-  nome: 'Nome',
-  sobrenome: 'Sobrenome',
-  apelido: 'Liné',
-  usuario: '',
+  nome: 'Pedro',
+  sobrenome: 'Henrique de Castro',
+  apelido: 'Pedro',
+  usuario: 'pedro.castro',
   fotoUrl: null,
   biografia: '',
-  dataNascimento: null,
+  dataNascimento: '2000-10-20',
   genero: 'nao_informar',
-  contato: { email: 'email@exemplo.com', telefone: '(11) 9XXXX-XXXX' },
+  contato: { email: 'pedro.castro@gmail.com', telefone: '(11) 98745-8800' },
 };
 
 export const horasAtrasISO = (h: number): string => new Date(Date.now() - h * 3600 * 1000).toISOString();
@@ -486,8 +485,8 @@ export const TAMANHO_MAX_FOTO = 5 * 1024 * 1024; // 5 MB
 /* =============================================================================
  * 6. ROTAS DAS ATIVIDADES — PONTOS DE INTEGRAÇÃO COM OUTRAS PÁGINAS
  * -----------------------------------------------------------------------------
- * Os cartões de atividade da Home e do Perfil abrem a página de outro
- * colaborador. Quando a página existir, troque `null` pelo caminho dela
+ * Os cartões de atividade da Home abrem a página de outro colaborador.
+ * Quando a página existir, troque `null` pelo caminho dela
  * (ex.: '/principal/metas'). Enquanto for null, o toque mostra um aviso
  * "em breve" — o botão já está clicável e pronto.
  * ========================================================================== */
@@ -495,11 +494,11 @@ export const TAMANHO_MAX_FOTO = 5 * 1024 * 1024; // 5 MB
 export type ChaveAtividade = 'checkinEmocional' | 'evolucaoPessoal' | 'questionarios' | 'exercicios' | 'metas';
 
 export const ROTAS_ATIVIDADES: Record<ChaveAtividade, Href | null> = {
-  checkinEmocional: null, // PERFIL → "Check-in Emocional": ligar à página de histórico de check-ins
-  evolucaoPessoal: null,  // HOME e PERFIL → "Evolução Pessoal": ligar à página de evolução pessoal
-  questionarios: null,    // HOME ("Meus Questionários") e PERFIL ("Questionários"): ligar à página de questionários
-  exercicios: null,       // HOME ("Meus Exercícios") e PERFIL ("Exercícios"): ligar à página de exercícios
-  metas: null,            // HOME ("Minhas Metas") e PERFIL ("Metas"): ligar à página de metas
+  checkinEmocional: null, // ligar à página de histórico de check-ins
+  evolucaoPessoal: null,  // HOME → "Evolução Pessoal": ligar à página de evolução pessoal
+  questionarios: null,    // HOME ("Meus Questionários"): ligar à página de questionários
+  exercicios: null,       // HOME ("Meus Exercícios"): ligar à página de exercícios
+  metas: null,            // HOME ("Minhas Metas"): ligar à página de metas
 };
 
 export function abrirAtividade(chave: ChaveAtividade): void {
@@ -602,7 +601,7 @@ export function BotaoVoltar() {
 export interface PropsCabecalho {
   titulo: string;
   subtitulo?: string;
-  mostrarFoto?: boolean; // foto à esquerda → Meu Perfil
+  mostrarFoto?: boolean; // foto à esquerda (sem clique)
 }
 
 /**
@@ -618,9 +617,9 @@ export function Cabecalho({ titulo, subtitulo, mostrarFoto }: PropsCabecalho) {
   const ladoLargura = 3 * 42 + 2 * 6;
 
   const foto = mostrarFoto ? (
-    <Pressable onPress={() => irTela('perfil')} accessibilityRole="button" accessibilityLabel="Abrir Meu Perfil" style={estilos.avatarCabecalho}>
+    <View style={estilos.avatarCabecalho}>
       <Avatar tamanho={compacto ? 50 : 58} />
-    </Pressable>
+    </View>
   ) : null;
 
   const icones = (
@@ -662,12 +661,17 @@ export function Cabecalho({ titulo, subtitulo, mostrarFoto }: PropsCabecalho) {
 
   if (compacto) {
     return (
-      <View style={{ marginBottom: 12 }}>
+      <View style={{ marginBottom: titulo || subtitulo ? 12 : 2 }}>
         <View style={estilos.cabLinhaTopo}>
           <View>{foto}</View>
           {icones}
         </View>
-        <View style={{ marginTop: 6 }}>{bloco}</View>
+
+        {(titulo || subtitulo) && (
+          <View style={{ marginTop: 6 }}>
+            {bloco}
+          </View>
+        )}
       </View>
     );
   }
@@ -962,13 +966,13 @@ export function CheckinEmocional() {
               accessibilityState={{ checked: selecionada }}
               accessibilityLabel={e.rotulo}
             >
-<View style={[estilos.emocaoAnel, { width: anel, height: anel, borderRadius: anel / 2 }, selecionada && estilos.emocaoAnelAtivo]}>
-  <RostoEmocao chave={e.chave} cor={e.cor} tamanho={rosto} />
-</View>
+              <View style={[estilos.emocaoAnel, { width: anel, height: anel, borderRadius: anel / 2 }, selecionada && estilos.emocaoAnelAtivo]}>
+                <RostoEmocao chave={e.chave} cor={e.cor} tamanho={rosto} />
+              </View>
 
-<Text style={estilos.emocaoRotulo}>
-  {e.rotulo}
-</Text>
+              <Text style={estilos.emocaoRotulo}>
+                {e.rotulo}
+              </Text>
             </Pressable>
           );
         })}
@@ -994,26 +998,26 @@ export function CheckinEmocional() {
         <Text style={[estilos.sinal, { color: cores.turquesa }]}>–</Text>
       </View>
 
-<EscalaNumerica
-  rotulo="Ansiedade"
-  valor={ansiedade}
-  onChange={setAnsiedade}
-  gradiente={[cores.lavanda, cores.lilas, cores.azulCeu]}
-/>
+      <EscalaNumerica
+        rotulo="Ansiedade"
+        valor={ansiedade}
+        onChange={setAnsiedade}
+        gradiente={[cores.lavanda, cores.lilas, cores.azulCeu]}
+      />
 
-<EscalaNumerica
-  rotulo="Estresse"
-  valor={estresse}
-  onChange={setEstresse}
-  gradiente={[cores.rosaPastel, cores.pessego, cores.laranjaSuave]}
-/>
+      <EscalaNumerica
+        rotulo="Estresse"
+        valor={estresse}
+        onChange={setEstresse}
+        gradiente={[cores.rosaPastel, cores.pessego, cores.laranjaSuave]}
+      />
 
-<EscalaNumerica
-  rotulo="Energia"
-  valor={energia}
-  onChange={setEnergia}
-  gradiente={[cores.verdeSuave, cores.verdeMenta, cores.amareloPastel]}
-/>
+      <EscalaNumerica
+        rotulo="Energia"
+        valor={energia}
+        onChange={setEnergia}
+        gradiente={[cores.verdeSuave, cores.verdeMenta, cores.amareloPastel]}
+      />
       <BotaoSalvarDia onPress={salvar} />
       {aviso && (
         <Text style={[estilos.aviso, aviso.tipo === 'ok' ? estilos.avisoOk : estilos.avisoErro]} accessibilityLiveRegion="polite">
@@ -1165,21 +1169,53 @@ export function TelaHome() {
 
   const cartaoSaudacao = (
     <View style={estilos.homeIntro}>
-      {/* O apelido vem do store: mudou nas Configurações, muda aqui. */}
-      <Text style={[estilos.saudacao, { fontSize: desktop ? 34 : estreito ? 25 : 28 }]} numberOfLines={2}>Olá, {apelido}!</Text>
-      <Text style={[estilos.frase, desktop && { fontSize: 17, lineHeight: 24 }]}>{frase}</Text>
+
+      {/* Foto do perfil ao lado da saudação (sem clique) */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 0 }}>
+
+        <View style={estilos.avatarCabecalho}>
+          <Avatar tamanho={desktop ? 68 : 60} />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text
+            style={[
+              estilos.saudacao,
+              { fontSize: desktop ? 34 : estreito ? 25 : 28 }
+            ]}
+            numberOfLines={2}
+          >
+            Olá, {apelido}!
+          </Text>
+        </View>
+
+      </View>
+
+      <Text style={[estilos.frase, desktop && { fontSize: 17, lineHeight: 24 }]}>
+        {frase}
+      </Text>
+
       <Text style={estilos.secaoTitulo}>Suas atividades:</Text>
+
       {desktop ? <GradeAtividades /> : <CarrosselAtividades />}
+
     </View>
   );
 
   return (
     <>
-      <Cabecalho titulo="Home" mostrarFoto />
+      {/* Cabeçalho com configurações, notificações e sair, sem o título Home */}
+      <Cabecalho titulo="" />
+
       {desktop ? (
         <View style={estilos.duasColunas}>
-          <View style={{ flex: 1 }}>{cartaoSaudacao}</View>
-          <View style={{ flex: 1.1 }}><CheckinEmocional /></View>
+          <View style={{ flex: 1 }}>
+            {cartaoSaudacao}
+          </View>
+
+          <View style={{ flex: 1.1 }}>
+            <CheckinEmocional />
+          </View>
         </View>
       ) : (
         <>
@@ -1187,141 +1223,6 @@ export function TelaHome() {
           <CheckinEmocional />
         </>
       )}
-    </>
-  );
-}
-
-/* =============================================================================
- * 11. TELA MEU PERFIL
- * ========================================================================== */
-
-export function CartaoAtividadePerfil({ chave, titulo, corTexto = '#334155', estiloExtra, children }: {
-  chave: ChaveAtividade; titulo: string; fundo: string; corTexto?: string; estiloExtra?: ViewStyle; children?: React.ReactNode;
-}) {
-  const icones: Partial<Record<ChaveAtividade, IconeNome>> = {
-    checkinEmocional: 'heart', questionarios: 'clipboard', evolucaoPessoal: 'trending-up', exercicios: 'fitness', metas: 'flag',
-  };
-  return (
-    <Pressable style={[estilos.cartaoPerfil, estiloExtra]} onPress={() => abrirAtividade(chave)} accessibilityRole="button" accessibilityLabel={titulo}>
-      <View style={estilos.cartaoPerfilCabecalho}>
-        <View style={estilos.atividadeIconeBox}>
-          <Ionicons name={icones[chave] ?? 'apps'} size={21} color="#397FB5" />
-        </View>
-        <Text style={[estilos.cartaoPerfilTexto, { color: corTexto }]}>{titulo}</Text>
-      </View>
-      {children}
-    </Pressable>
-  );
-}
-
-export function TelaPerfil() {
-  const perfil = useEvolua((e) => e.perfil);
-  const { estreito, largo, desktop } = useLayoutInfo();
-  // A biografia é editada num estado local e gravada ao sair do campo (evita gravar a cada letra).
-  const [bio, setBio] = useState(perfil.biografia);
-
-  const colunaA = (
-    <View style={{ flex: 1, gap: 12 }}>
-      <CartaoAtividadePerfil chave="checkinEmocional" titulo="Check-in Emocional" fundo={cores.rosaVibrante} />
-      <CartaoAtividadePerfil chave="questionarios" titulo="Questionários" fundo={cores.turquesa} corTexto={cores.azulMarinho} />
-    </View>
-  );
-  const colunaB = (
-    <View style={{ flex: 1, gap: 12 }}>
-      <CartaoAtividadePerfil chave="evolucaoPessoal" titulo="Evolução Pessoal" fundo={cores.azulProfundo} />
-      <CartaoAtividadePerfil chave="exercicios" titulo="Exercícios" fundo={cores.laranja} corTexto={cores.azulMarinho} />
-    </View>
-  );
-  const metas = (
-    <CartaoAtividadePerfil
-      chave="metas"
-      titulo="Metas"
-      fundo={cores.verdeMenta}
-      corTexto={cores.azulMarinho}
-      estiloExtra={{ flex: largo ? 1 : undefined, justifyContent: 'space-between' }}
-    >
-      <View style={estilos.metasBarras}>
-        <View style={[estilos.metasBarra, { height: '45%' }]} />
-        <View style={[estilos.metasBarra, { height: '70%' }]} />
-        <View style={[estilos.metasBarra, { height: '100%' }]} />
-      </View>
-    </CartaoAtividadePerfil>
-  );
-
-  const cartaoPessoa = (
-    <View style={estilos.cartao}>
-      <View style={estilos.perfilBannerBox}>
-        <LinearGradient
-          colors={['#F8FAFC', '#EAF4FB', '#DCECF8']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={estilos.perfilBanner}
-        />
-        <View style={estilos.perfilFoto}><Avatar tamanho={estreito ? 92 : 108} /></View>
-      </View>
-      {/* Nome, sobrenome e apelido vêm do store (editados nas Configurações). */}
-      <Text style={estilos.perfilNome}>{perfil.nome} {perfil.sobrenome}</Text>
-      <Text style={estilos.perfilApelido}>{perfil.apelido}</Text>
-      <Text style={estilos.perfilBioRotulo}>Biografia:</Text>
-      <TextInput
-        style={estilos.perfilBio}
-        placeholder="Apresente-se aqui!"
-        placeholderTextColor={cores.cinzaAzulado}
-        multiline
-        maxLength={500}
-        textAlignVertical="top"
-        value={bio}
-        onChangeText={setBio}
-        onBlur={() => atualizarPerfil({ biografia: bio })}
-        accessibilityLabel="Biografia"
-      />
-    </View>
-  );
-
-  const cartaoAtividades = (
-    <View style={estilos.cartao}>
-      <Text style={[estilos.secaoTitulo, { fontSize: 20 }]}>Suas Atividades aparecerão aqui</Text>
-      {/*
-       * BLOCOS DE ATIVIDADES DO PERFIL (para os demais colaboradores):
-       *  - "Check-in Emocional": histórico dos check-ins → ligar a ROTAS_ATIVIDADES.checkinEmocional
-       *  - "Evolução Pessoal"  → ROTAS_ATIVIDADES.evolucaoPessoal
-       *  - "Questionários"     → ROTAS_ATIVIDADES.questionarios
-       *  - "Exercícios"        → ROTAS_ATIVIDADES.exercicios
-       *  - "Metas"             → ROTAS_ATIVIDADES.metas
-       * Todos já são clicáveis; basta preencher os caminhos na seção 6.
-       */}
-      {largo ? (
-        <View style={estilos.perfilGrade}>
-          {colunaA}
-          {colunaB}
-          <View style={{ flex: 0.8 }}>{metas}</View>
-        </View>
-      ) : (
-        <View style={{ gap: 12 }}>
-          <View style={estilos.perfilGrade}>{colunaA}{colunaB}</View>
-          {metas}
-        </View>
-      )}
-      {/* Indicador "..." do design (apenas visual: sinaliza que a seção é extensível). */}
-      <View style={estilos.maisIndicador}><Text style={estilos.maisTexto}>. . .</Text></View>
-    </View>
-  );
-
-  return (
-    <>
-      <Cabecalho titulo="Meu Perfil" />
-      {desktop ? (
-        <View style={estilos.duasColunas}>
-          <View style={{ flex: 1 }}>{cartaoPessoa}</View>
-          <View style={{ flex: 1 }}>{cartaoAtividades}</View>
-        </View>
-      ) : (
-        <>
-          {cartaoPessoa}
-          {cartaoAtividades}
-        </>
-      )}
-      <BotaoVoltar />
     </>
   );
 }
@@ -1368,12 +1269,12 @@ export const estilos = StyleSheet.create({
 
   /* Check-in */
   emocaoRotulo: {
-  fontFamily: fontes.texto,
-  fontSize: 10,
-  color: cores.cinzaGrafite,
-  textAlign: 'center',
-  marginTop: 5,
-  minHeight: 28,
+    fontFamily: fontes.texto,
+    fontSize: 10,
+    color: cores.cinzaGrafite,
+    textAlign: 'center',
+    marginTop: 5,
+    minHeight: 28,
   },
   emocoesLinha: { flexDirection: 'row', marginHorizontal: 26, marginTop: 2 },
   emocaoCelula: { flex: 1, alignItems: 'center', paddingVertical: 6 },
@@ -1405,23 +1306,6 @@ export const estilos = StyleSheet.create({
   btnSecundarioTexto: { fontFamily: fontes.botao, fontSize: 15, color: cores.azulProfundo },
   btnVoltar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, alignSelf: 'center', width: '84%', maxWidth: 360, marginTop: 4, marginBottom: 8, paddingVertical: 14, borderRadius: 16, backgroundColor: cores.branco, borderWidth: 2, borderColor: cores.azulCeu },
   btnVoltarTexto: { fontFamily: fontes.botao, fontSize: 16, color: cores.azulProfundo },
-
-  /* Perfil */
-  perfilBannerBox: { height: 130, marginBottom: 58 },
-  perfilBanner: { ...StyleSheet.absoluteFillObject, borderRadius: 18 },
-  perfilFoto: { position: 'absolute', left: 16, bottom: -52, borderWidth: 4, borderColor: cores.branco, borderRadius: 70, overflow: 'hidden', backgroundColor: cores.branco },
-  perfilNome: { fontFamily: fontes.titulo, fontSize: 22, color: cores.azulMarinho, marginHorizontal: 6 },
-  perfilApelido: { fontFamily: fontes.textoMedio, fontSize: 14, color: '#397FB5', marginHorizontal: 6, marginTop: 2 },
-  perfilBioRotulo: { fontFamily: fontes.textoMedio, fontSize: 15, color: cores.azulMarinho, marginTop: 14, marginHorizontal: 6, marginBottom: 6 },
-  perfilBio: { minHeight: 120, borderRadius: 18, backgroundColor: cores.brancoAzulado, borderWidth: 1, borderColor: cores.cinzaClaro, padding: 14, fontFamily: fontes.texto, fontSize: 15, lineHeight: 21, color: cores.azulMarinho },
-  perfilGrade: { flexDirection: 'row', gap: 12 },
-  cartaoPerfil: { borderRadius: 14, padding: 14, minHeight: 76, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5EAF0' },
-  cartaoPerfilCabecalho: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  cartaoPerfilTexto: { flex: 1, fontFamily: fontes.textoMedio, fontSize: 16, lineHeight: 21 },
-  metasBarras: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 52, marginTop: 10 },
-  metasBarra: { flex: 1, backgroundColor: '#B7D7EF', borderRadius: 4 },
-  maisIndicador: { alignSelf: 'center', width: 90, height: 48, borderRadius: 14, backgroundColor: '#EAF2F8', alignItems: 'center', justifyContent: 'center', marginTop: 16 },
-  maisTexto: { color: '#397FB5', letterSpacing: 3, fontSize: 16, fontFamily: fontes.titulo },
 
   /* Configurações (formulário único) */
   fotoLinha: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
