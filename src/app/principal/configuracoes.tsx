@@ -35,7 +35,9 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import Constants from 'expo-constants';
 import { cores, fontes } from '../../tema';
+import { EMPRESA, VERSAO_TERMOS, VIGENCIA_TERMOS } from '../../termos';
 
 import {
   Genero,
@@ -123,6 +125,9 @@ import {
 } from './compartilhado';
 
 type AvisoConfig = { tipo: 'ok' | 'erro'; texto: string };
+
+// Lê a versão do app.json (campo "version"). Se não achar, usa 1.0.0.
+const VERSAO_APP = Constants.expoConfig?.version ?? '1.0.0';
 
 function Campo({ rotulo, meia, ...props }: { rotulo: string; meia?: boolean } & React.ComponentProps<typeof TextInput>) {
   return (
@@ -224,6 +229,10 @@ export default function TelaConfiguracoes() {
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
 
   const erro = (texto: string) => setAviso({ tipo: 'erro', texto });
+
+  // Abre a tela de Termos (que fica em /acesso) em modo somente leitura.
+  const abrirTermos = () =>
+    router.push({ pathname: '/acesso/termos-de-uso', params: { modo: 'consulta' } } as Href);
 
   const salvarDados = () => {
     if (!nome.trim()) return erro('Informe o nome.');
@@ -339,6 +348,30 @@ export default function TelaConfiguracoes() {
       </View>
     );
   };
+
+  // Linha que não expande: leva direto para outra tela.
+  const linkTela = (titulo: string, aoPressionar: () => void) => (
+    <Pressable
+      onPress={aoPressionar}
+      accessibilityRole="link"
+      accessibilityLabel={titulo}
+      style={[
+        estilos.cartao,
+        {
+          padding: 0,
+          minHeight: 66,
+          paddingHorizontal: 18,
+          paddingVertical: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+      ]}
+    >
+      <Text style={[estilos.secaoTitulo, { marginBottom: 0, fontSize: 18 }]}>{titulo}</Text>
+      <Ionicons name="chevron-forward" size={21} color={cores.azulEvolua} />
+    </Pressable>
+  );
 
   const conteudoDados = (
     <>
@@ -510,6 +543,32 @@ export default function TelaConfiguracoes() {
     </>
   );
 
+  const conteudoSobre = (
+    <>
+      <Text style={estilos.painelTexto}>
+        O Evolua é um aplicativo de acompanhamento emocional e de bem-estar, para você registrar
+        como se sente e acompanhar sua evolução ao longo do tempo. Ele não substitui o acompanhamento
+        de um profissional de saúde.
+      </Text>
+
+      <Text style={estilos.campoRotulo}>Versão do app</Text>
+      <Text style={estilos.painelTexto}>{VERSAO_APP}</Text>
+
+      <Text style={estilos.campoRotulo}>Termos de Uso e Privacidade</Text>
+      <Text style={estilos.painelTexto}>
+        Versão {VERSAO_TERMOS} · em vigor desde {VIGENCIA_TERMOS}
+      </Text>
+
+      <Text style={estilos.campoRotulo}>Desenvolvido por</Text>
+      <Text style={estilos.painelTexto}>
+        {EMPRESA.nomeFantasia} ({EMPRESA.razaoSocial}){'\n'}CNPJ {EMPRESA.cnpj}
+      </Text>
+
+      <Text style={estilos.campoRotulo}>Contato sobre seus dados (LGPD)</Text>
+      <Text style={[estilos.painelTexto, { marginBottom: 0 }]}>{EMPRESA.emailEncarregado}</Text>
+    </>
+  );
+
   const conteudoConta = (
     <>
       <Text style={estilos.painelTexto}>
@@ -571,6 +630,8 @@ export default function TelaConfiguracoes() {
         {secao('dados', 'Dados pessoais', conteudoDados)}
         {secao('contato', 'Contato', conteudoContato)}
         {secao('seguranca', 'Segurança e privacidade', conteudoSeguranca)}
+        {linkTela('Termos de uso', abrirTermos)}
+        {secao('sobre', 'Sobre o app', conteudoSobre)}
         {secao('conta', 'Gerenciamento da conta', conteudoConta, true)}
       </View>
 
