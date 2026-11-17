@@ -1,39 +1,7 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
-import {
-  Alert,
-  Animated,
-  BackHandler,
-  Keyboard,
-  KeyboardAvoidingView,
-  type LayoutChangeEvent,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  PanResponder,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
-  type ViewStyle,
-} from 'react-native';
-import { router, useNavigation, type Href } from 'expo-router';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
+import { Alert, Linking, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { router, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path } from 'react-native-svg';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
 import { cores, fontes } from '../../tema';
@@ -41,93 +9,43 @@ import { EMPRESA, VERSAO_TERMOS, VIGENCIA_TERMOS } from '../../termos';
 
 import {
   Genero,
-  PerfilUsuario,
-  EmocaoChave,
-  RegistroCheckin,
-  StatusNotificacao,
-  Notificacao,
-  EstadoEvolua,
-  TelaInterna,
   IconeNome,
-  PADDING_CARTAO,
-  BP_DESKTOP,
   useLayoutInfo,
-  SOMBRA,
-  EMOCOES,
-  FRASES_MOTIVACIONAIS,
-  avisar,
-  useTecladoVisivel,
-  PERFIL_PADRAO,
-  horasAtrasISO,
-  NOTIFICACOES_EXEMPLO,
-  estadoAtual,
-  ouvintesEstado,
-  ouvintesCheckin,
-  ouvintesPerfil,
-  ouvintesNotificacoes,
-  definirEstado,
-  lerEstadoEvolua,
   useEvolua,
-  inicializarDadosEvolua,
   atualizarPerfil,
-  definirStatusNotificacao,
-  aoSalvarCheckin,
-  aoMudarPerfil,
-  aoMudarNotificacoes,
-  salvarCheckin,
-  FiltroCheckins,
-  filtrarCheckins,
-  useCheckins,
-  senhaLocal,
   senhaAtualCorreta,
   definirSenhaLocal,
   excluirContaLocal,
-  gerarId,
-  dataLocalISO,
   formatarDataNascimento,
   mascararData,
   mascararTelefone,
   dataBRparaISO,
-  formatarDataNotificacao,
-  fraseDoDia,
   GENEROS,
   emailValido,
   telefoneValido,
   TAMANHO_MAX_FOTO,
-  ChaveAtividade,
-  ROTAS_ATIVIDADES,
-  abrirAtividade,
   Avatar,
   BotaoDestaque,
-  BotaoSalvarDia,
   BotaoSecundario,
   BotaoVoltar,
-  PropsCabecalho,
   Cabecalho,
-  ItemMenu,
-  BotaoMenu,
-  MenuInferior,
-  PropsDeslizador,
-  TAMANHO_BOLINHA,
-  DeslizadorDiscreto,
-  RostoEmocao,
-  EscalaNumerica,
-  CheckinEmocional,
-  AtividadeHome,
-  ATIVIDADES_HOME,
-  CartaoAtividadeHome,
-  GradeAtividades,
-  CarrosselAtividades,
-  TelaHome,
-  CartaoAtividadePerfil,
-  TelaPerfil,
-  estilos
+  estilos,
 } from './compartilhado';
 
 type AvisoConfig = { tipo: 'ok' | 'erro'; texto: string };
 
 // Lê a versão do app.json (campo "version"). Se não achar, usa 1.0.0.
 const VERSAO_APP = Constants.expoConfig?.version ?? '1.0.0';
+
+// Cada seção tem um fundo e um tom de destaque (borda e ícone), todos do tema.ts.
+const TONS_SECAO: Record<string, { fundo: string; destaque: string; icone: IconeNome }> = {
+  dados:     { fundo: cores.branco, destaque: cores.azulEvolua,   icone: 'person-outline' },
+  contato:   { fundo: cores.branco, destaque: cores.feliz,        icone: 'call-outline' },
+  seguranca: { fundo: cores.branco, destaque: cores.muitoTriste,  icone: 'shield-checkmark-outline' },
+  termos:    { fundo: cores.branco, destaque: cores.muitoFeliz,   icone: 'document-text-outline' },
+  sobre:     { fundo: cores.branco, destaque: cores.triste,       icone: 'information-circle-outline' },
+  conta:     { fundo: cores.branco, destaque: cores.rosaVibrante, icone: 'settings-outline' },
+};
 
 function Campo({ rotulo, meia, ...props }: { rotulo: string; meia?: boolean } & React.ComponentProps<typeof TextInput>) {
   return (
@@ -139,8 +57,36 @@ function Campo({ rotulo, meia, ...props }: { rotulo: string; meia?: boolean } & 
 }
 
 /**
- * Campo da FOTO: escolher imagem da galeria do celular ou, na web, do computador
- * (o mesmo seletor abre o explorador de arquivos) e ARRASTAR E SOLTAR (só web).
+ * Pede permissão ao usuário (galeria ou câmera). Na web não precisa.
+ * Se a pessoa negar, explica o motivo e oferece abrir as configurações do celular.
+ */
+async function pedirPermissao(tipo: 'galeria' | 'camera'): Promise<boolean> {
+  if (Platform.OS === 'web') return true;
+
+  const r =
+    tipo === 'camera'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (r.granted) return true;
+
+  Alert.alert(
+    tipo === 'camera' ? 'Permissão da câmera' : 'Permissão da galeria',
+    tipo === 'camera'
+      ? 'Para tirar uma foto de perfil, o Evolua precisa de acesso à câmera. Você pode permitir nas configurações do aparelho.'
+      : 'Para escolher uma foto de perfil, o Evolua precisa de acesso às suas fotos. Você pode permitir nas configurações do aparelho.',
+    [
+      { text: 'Agora não', style: 'cancel' },
+      { text: 'Abrir configurações', onPress: () => Linking.openSettings() },
+    ],
+  );
+  return false;
+}
+
+/**
+ * Campo da FOTO: escolher imagem da galeria, tirar foto com a câmera (só celular)
+ * ou, na web, escolher do computador e ARRASTAR E SOLTAR.
+ * Antes de abrir a galeria/câmera, o app pede permissão.
  * A foto só vale depois de "Salvar alterações".
  */
 function CampoFoto({ uri, onChange, onErro }: { uri: string | null; onChange: (u: string | null) => void; onErro: (t: string) => void }) {
@@ -153,6 +99,7 @@ function CampoFoto({ uri, onChange, onErro }: { uri: string | null; onChange: (u
 
   const escolher = async () => {
     try {
+      if (!(await pedirPermissao('galeria'))) return;
       const r = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -162,6 +109,21 @@ function CampoFoto({ uri, onChange, onErro }: { uri: string | null; onChange: (u
       if (!r.canceled && r.assets[0]) aplicarUri(r.assets[0].uri, r.assets[0].fileSize);
     } catch {
       onErro('Não foi possível abrir a galeria.');
+    }
+  };
+
+  const tirarFoto = async () => {
+    try {
+      if (!(await pedirPermissao('camera'))) return;
+      const r = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!r.canceled && r.assets[0]) aplicarUri(r.assets[0].uri, r.assets[0].fileSize);
+    } catch {
+      onErro('Não foi possível abrir a câmera.');
     }
   };
 
@@ -196,6 +158,7 @@ function CampoFoto({ uri, onChange, onErro }: { uri: string | null; onChange: (u
           )}
         <View style={estilos.linhaBotoes}>
           <BotaoSecundario texto={Platform.OS === 'web' ? 'Escolher do computador' : 'Escolher da galeria'} onPress={escolher} />
+          {Platform.OS !== 'web' && <BotaoSecundario texto="Tirar foto" onPress={tirarFoto} />}
           {uri ? <BotaoSecundario texto="Remover foto" onPress={() => onChange(null)} /> : null}
         </View>
       </View>
@@ -312,8 +275,21 @@ export default function TelaConfiguracoes() {
 
   const secao = (id: string, titulo: string, conteudo: React.ReactNode, perigo = false) => {
     const aberta = secaoAberta === id;
+    const tom = TONS_SECAO[id];
     return (
-      <View style={[estilos.cartao, perigo && estilos.cartaoPerigo, { padding: 0, overflow: 'hidden' }]}>
+      <View
+        style={[
+          estilos.cartao,
+          perigo && estilos.cartaoPerigo,
+          {
+            padding: 0,
+            overflow: 'hidden',
+            backgroundColor: tom.fundo,
+            borderWidth: 1.5,
+            borderColor: tom.destaque + '66',
+          },
+        ]}
+      >
         <Pressable
           onPress={() => {
             setSecaoAberta(aberta ? null : id);
@@ -327,17 +303,25 @@ export default function TelaConfiguracoes() {
             paddingVertical: 16,
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'space-between',
           }}
         >
-          <Text style={[estilos.secaoTitulo, { marginBottom: 0, fontSize: 18 }]}>
+          <View
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              marginRight: 12,
+              backgroundColor: cores.branco,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name={tom.icone} size={20} color={tom.destaque} />
+          </View>
+          <Text style={[estilos.secaoTitulo, { marginBottom: 0, fontSize: 18, flex: 1 }]}>
             {titulo}
           </Text>
-          <Ionicons
-            name={aberta ? 'chevron-up' : 'chevron-down'}
-            size={21}
-            color={cores.azulEvolua}
-          />
+          <Ionicons name={aberta ? 'chevron-up' : 'chevron-down'} size={21} color={tom.destaque} />
         </Pressable>
         {aberta && (
           <View style={{ paddingHorizontal: 18, paddingBottom: 18 }}>
@@ -350,28 +334,46 @@ export default function TelaConfiguracoes() {
   };
 
   // Linha que não expande: leva direto para outra tela.
-  const linkTela = (titulo: string, aoPressionar: () => void) => (
-    <Pressable
-      onPress={aoPressionar}
-      accessibilityRole="link"
-      accessibilityLabel={titulo}
-      style={[
-        estilos.cartao,
-        {
-          padding: 0,
-          minHeight: 66,
-          paddingHorizontal: 18,
-          paddingVertical: 16,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        },
-      ]}
-    >
-      <Text style={[estilos.secaoTitulo, { marginBottom: 0, fontSize: 18 }]}>{titulo}</Text>
-      <Ionicons name="chevron-forward" size={21} color={cores.azulEvolua} />
-    </Pressable>
-  );
+  const linkTela = (id: string, titulo: string, aoPressionar: () => void) => {
+    const tom = TONS_SECAO[id];
+    return (
+      <Pressable
+        onPress={aoPressionar}
+        accessibilityRole="link"
+        accessibilityLabel={titulo}
+        style={[
+          estilos.cartao,
+          {
+            padding: 0,
+            minHeight: 66,
+            paddingHorizontal: 18,
+            paddingVertical: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: tom.fundo,
+            borderWidth: 1.5,
+            borderColor: tom.destaque + '66',
+          },
+        ]}
+      >
+        <View
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            marginRight: 12,
+            backgroundColor: cores.branco,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name={tom.icone} size={20} color={tom.destaque} />
+        </View>
+        <Text style={[estilos.secaoTitulo, { marginBottom: 0, fontSize: 18, flex: 1 }]}>{titulo}</Text>
+        <Ionicons name="chevron-forward" size={21} color={tom.destaque} />
+      </Pressable>
+    );
+  };
 
   const conteudoDados = (
     <>
@@ -473,33 +475,38 @@ export default function TelaConfiguracoes() {
       <Text style={estilos.painelTexto}>
         Gerencie sua senha e consulte as informações sobre a privacidade dos seus dados.
       </Text>
+
+      {/* Botão colorido: só esta parte fica rosa para indicar que é clicável. */}
       <Pressable
         onPress={() => setSenhaAberta((aberta) => !aberta)}
         accessibilityRole="button"
         accessibilityState={{ expanded: senhaAberta }}
         style={{
-          minHeight: 52,
+          minHeight: 60,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: 10,
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          borderRadius: 14,
+          backgroundColor: cores.muitoTriste,
         }}
       >
         <View style={{ flex: 1 }}>
-          <Text style={estilos.campoRotulo}>Alterar senha</Text>
-          <Text style={[estilos.painelTexto, { marginBottom: 0 }]}>
+          <Text style={[estilos.campoRotulo, { color: cores.branco, marginBottom: 2 }]}>Alterar senha</Text>
+          <Text style={[estilos.painelTexto, { marginBottom: 0, color: cores.branco }]}>
             Atualize sua senha de acesso.
           </Text>
         </View>
         <Ionicons
           name={senhaAberta ? 'chevron-up' : 'chevron-down'}
-          size={20}
-          color={cores.azulEvolua}
+          size={22}
+          color={cores.branco}
         />
       </Pressable>
 
       {senhaAberta && (
-        <View style={{ marginTop: 10 }}>
+        <View style={{ marginTop: 14 }}>
           <Campo
             rotulo="Senha atual"
             value={senhaAtual}
@@ -630,7 +637,7 @@ export default function TelaConfiguracoes() {
         {secao('dados', 'Dados pessoais', conteudoDados)}
         {secao('contato', 'Contato', conteudoContato)}
         {secao('seguranca', 'Segurança e privacidade', conteudoSeguranca)}
-        {linkTela('Termos de uso', abrirTermos)}
+        {linkTela('termos', 'Termos de uso', abrirTermos)}
         {secao('sobre', 'Sobre o app', conteudoSobre)}
         {secao('conta', 'Gerenciamento da conta', conteudoConta, true)}
       </View>

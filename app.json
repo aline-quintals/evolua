@@ -33,7 +33,14 @@
           "imageWidth": 76
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Evolua precisa acessar suas fotos para você escolher a foto de perfil.",
+          "cameraPermission": "O Evolua precisa acessar a câmera para você tirar sua foto de perfil."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
