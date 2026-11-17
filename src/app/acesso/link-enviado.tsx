@@ -1,3 +1,4 @@
+
 import {
   View,
   Text,
@@ -10,23 +11,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Polygon, Rect } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { cores, fontes } from '../../tema';
 
-const AZUL_BOTAO = '#4D63E8';
-
-// Envelope aberto com o "certo" verde
+// Envelope aberto com confirmação verde
 function EnvelopeOk() {
   return (
-    <Svg width={150} height={123} viewBox="0 0 180 130">
-      {/* aba aberta (fundo) */}
+     <Svg width={150} height={123} viewBox="-15 0 180 130"   >
+      {/* Aba aberta (fundo) */}
       <Polygon points="0,42 65,2 130,42" fill="#0B5CA8" />
 
-      {/* papel */}
+      {/* Papel */}
       <Rect x="25" y="12" width="80" height="70" rx="5" fill="#FDF1DC" />
       <Rect x="36" y="27" width="58" height="6" rx="3" fill="#1F6FD0" />
       <Rect x="36" y="41" width="58" height="6" rx="3" fill="#1F6FD0" />
       <Rect x="36" y="55" width="58" height="6" rx="3" fill="#1F6FD0" />
 
-      {/* frente do envelope */}
+      {/* Frente do envelope */}
       <Path
         d="M0 42 L65 84 L130 42 L130 108 Q130 116 122 116 L8 116 Q0 116 0 108 Z"
         fill="#6BBBF7"
@@ -34,7 +34,7 @@ function EnvelopeOk() {
       <Polygon points="0,110 48,72 58,81 10,118" fill="#1976D2" />
       <Polygon points="130,110 82,72 72,81 120,118" fill="#1976D2" />
 
-      {/* certo verde */}
+      {/* Confirmação verde */}
       <Path
         d="M64 80 L86 103 L158 44"
         fill="none"
@@ -55,6 +55,20 @@ function EnvelopeOk() {
   );
 }
 
+// Estrelinhas pastel decorativas
+function Estrelinhas() {
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Text style={[styles.estrelinha, { top: 54, right: 24, fontSize: 14, color: cores.amareloPastel }]}>★</Text>
+      <Text style={[styles.estrelinha, { top: 100, left: 20, fontSize: 11, color: cores.rosaPastel }]}>☆</Text>
+      <Text style={[styles.estrelinha, { top: 170, right: 14, fontSize: 12, color: cores.lavanda }]}>☆</Text>
+      <Text style={[styles.estrelinha, { bottom: 140, right: 12, fontSize: 12, color: cores.laranja }]}>☆</Text>
+      <Text style={[styles.estrelinha, { bottom: 90, left: 14, fontSize: 13, color: cores.lilas }]}>★</Text>
+      <Text style={[styles.estrelinha, { bottom: 40, right: 24, fontSize: 14, color: cores.verdeAgua }]}>★</Text>
+    </View>
+  );
+}
+
 export default function LinkEnviado() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -64,47 +78,79 @@ export default function LinkEnviado() {
   return (
     <View style={styles.externo}>
       <LinearGradient
-        colors={['#4A74B5', '#A7C4EB', '#4A74B5']}
-        locations={[0, 0.5, 1]}
+        colors={[cores.azulEvolua, cores.azulCeu, cores.azulGelo]}
+        locations={[0, 0.45, 1]}
         style={styles.coluna}
       >
+        <Estrelinhas />
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.conteudo,
-            { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20 },
+            {
+              paddingTop: insets.top + 16,
+              paddingBottom: insets.bottom + 20,
+            },
           ]}
         >
-          {/* Seta: volta para o login */}
+          {/* Voltar para o login */}
           <View style={styles.linhaVoltar}>
             <TouchableOpacity
               onPress={irParaLogin}
               hitSlop={12}
               accessibilityLabel="Voltar para o login"
             >
-              <Ionicons name="arrow-back" size={38} color="#FFFFFF" />
+              <Ionicons
+                name="arrow-back"
+                size={36}
+                color={cores.branco}
+              />
             </TouchableOpacity>
           </View>
 
+          {/* Conteúdo central */}
           <View style={styles.centro}>
-            <EnvelopeOk />
+            <View style={styles.envelopeContainer}>
+               <EnvelopeOk />
+            </View>
 
-            <Text style={styles.titulo}>Link enviado!</Text>
+            <Text style={styles.titulo}>
+              Link enviado!
+            </Text>
 
             <Text style={styles.subtitulo}>
               Confira o seu e-mail para redefinir sua senha.
             </Text>
 
+            {/* Botão */}
             <TouchableOpacity
-              style={styles.botao}
+              style={styles.botaoWrap}
               onPress={irParaLogin}
               activeOpacity={0.85}
             >
-              <Text style={styles.botaoTexto}>Voltar para o Login</Text>
+              <LinearGradient
+                colors={[
+                  cores.amareloPastel,
+                  cores.laranjaSuave,
+                  cores.amareloPastel,
+                ]}
+                locations={[0, 0.5, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.botao}
+              >
+                <Text style={styles.botaoTexto}>
+                  Voltar para o Login
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.rodape}>Aplicativo criado por NubyTech • 2026</Text>
+          {/* Rodapé */}
+          <Text style={styles.rodape}>
+            Aplicativo criado por NubyTech • 2026
+          </Text>
         </ScrollView>
       </LinearGradient>
     </View>
@@ -112,17 +158,28 @@ export default function LinkEnviado() {
 }
 
 const styles = StyleSheet.create({
-  // Na web, em janela larga, vira uma coluna centralizada (como no celular)
   externo: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#1F3558',
+    backgroundColor: cores.azulMarinho,
   },
+
   coluna: {
     flex: 1,
     width: '100%',
     maxWidth: 480,
     overflow: 'hidden',
+  },
+
+  estrelinha: {
+    position: 'absolute',
+  },
+
+  envelopeContainer: {
+  width: '100%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  alignSelf: 'center',
   },
 
   conteudo: {
@@ -144,44 +201,56 @@ const styles = StyleSheet.create({
   },
 
   titulo: {
-    fontSize: 46,
-    lineHeight: 54,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontFamily: fontes.titulo,
+    fontSize: 38,
+    lineHeight: 46,
+    color: cores.branco,
     textAlign: 'center',
-    maxWidth: 260,
+    maxWidth: 300,
     marginTop: 24,
-    marginBottom: 14,
+    marginBottom: 12,
   },
 
   subtitulo: {
-    fontSize: 20,
-    lineHeight: 30,
-    color: '#FFFFFF',
+    fontFamily: fontes.texto,
+    fontSize: 18,
+    lineHeight: 26,
+    color: cores.brancoAzulado,
     textAlign: 'center',
-    maxWidth: 300,
-    marginBottom: 56,
+    maxWidth: 320,
+    marginBottom: 36,
+  },
+
+  botaoWrap: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 14,
+    backgroundColor: cores.amareloPastel,
+    elevation: 5,
   },
 
   botao: {
-    width: '100%',
-    maxWidth: 340,
-    height: 52,
-    backgroundColor: AZUL_BOTAO,
-    borderRadius: 10,
+    height: 54,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   botaoTexto: {
-    color: '#FFFFFF',
+    fontFamily: fontes.botao,
+    color: cores.branco,
     fontSize: 20,
-    fontWeight: '700',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(196, 128, 26, 0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 
   rodape: {
+    fontFamily: fontes.texto,
     marginTop: 'auto',
     paddingTop: 30,
-    color: '#FFFFFF',
+    color: cores.branco,
     fontSize: 12,
     textAlign: 'center',
   },
