@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+
+import db
 from bot import gerar_resposta, em_crise
 
 app = FastAPI(title="Evolua - Chat")
@@ -13,9 +15,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+db.iniciar()
 
 class Mensagem(BaseModel):
     texto: str
+    sessao:str ="padrao" 
 
 
 @app.get("/")
@@ -25,7 +29,15 @@ def raiz():
 
 @app.post("/chat")
 def chat(msg: Mensagem):
-    return {
-        "resposta": gerar_resposta(msg.texto),
-        "alerta": em_crise(msg.texto),
-    }
+    alerta = em_crise(msg.texto)
+    resposta = gerar_resposta(msg.texto)
+
+    db.salvar(msg.sessao, "eu", msg.texto)
+    db.salvar(msg.sessao, "bot", resposta, alerta)
+
+    return {"resposta": resposta, "alerta": alerta}
+
+@app.get("/historico")
+def limpar_historico(sessao: str = "padrao"):
+    db.apagar(sessao)
+    return {"status": "historico apagado"}
