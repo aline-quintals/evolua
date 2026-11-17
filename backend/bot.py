@@ -2,50 +2,75 @@ import random
 import re
 import unicodedata
 
-#=========================================
-#normalizacao de texto
-#=========================================
+
+# ==========================================
+# 1. NORMALIZACAO DE TEXTO
+# ==========================================
 
 def normalizar(texto):
     texto = texto.lower().strip()
-    texto = unicodedata.normalize('NFKD', texto)
-    texto = "".join(
-        c for c in texto
-        if unicodedata.category(c) != 'Mn'
-    )
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
     return texto
-# ==========================================
-# 2. DETECCAO DE SITUACOES DE RISCO
-# ==========================================
 
-CRISE = re.compile(
+
+# ==========================================
+# 2. DETECCAO DE RISCO (dois niveis)
+# ==========================================
+# Os padroes ja estao sem acento, porque o texto e normalizado antes.
+
+# NIVEL ALTO: fala direta sobre morrer, se matar ou se machucar
+CRISE_ALTA = re.compile(
     r"\b("
     r"me matar|"
     r"suicid\w*|"
     r"acabar com tudo|"
-    r"nao quero mais viver|"
-    r"quero morrer|"
-    r"tirar minha vida|"
-    r"me machucar|"
-    r"me ferir|"
-    r"automutil\w*|"
-    r"me cortar|"
-    r"nao aguento mais viver"
-    r")\b",
-    re.IGNORECASE
+    r"(acabar|terminar|encerrar|dar fim|por fim)\s+(com\s+|na\s+|a\s+)?(a\s+|minha\s+|propria\s+)*vida|"
+    r"tirar\s+(a\s+|minha\s+|propria\s+)*vida|"
+    r"nao quero\s+(mais\s+)?(viver|estar aqui)|"
+    r"nao aguento mais\s+(viver|essa vida)|"
+    r"nao vale\s+(mais\s+)?a pena viver|"
+    r"(quero|queria|vou|vontade de|pensando em|penso em|pensei em)\s+morrer|"
+    r"desistir de viver|"
+    r"(melhor|mais facil)\s+(sem mim|se eu morresse|eu morrer)|"
+    r"me machucar|me ferir|me cortar|automutil\w*|auto mutil\w*"
+    r")\b"
+)
+
+# NIVEL MEDIO: sinais de alerta (desanimo profundo, desistir, sem saida)
+CRISE_MEDIA = re.compile(
+    r"\b("
+    r"desistir de tudo|"
+    r"desistir|"
+    r"nao aguento mais|"
+    r"sem esperanca|"
+    r"sem saida|"
+    r"nao vejo saida|"
+    r"sem sentido|"
+    r"nao tenho mais forcas|"
+    r"estou no limite|"
+    r"queria sumir|"
+    r"queria desaparecer"
+    r")\b"
 )
 
 MSG_CRISE = (
-    "Sinto muito que você esteja passando por isso. "
-    "Obrigado por confiar em mim.\n\n"
-    "Quero entender melhor: você está pensando em se "
-    "machucar ou tirar sua própria vida neste momento? "
-    "Está em perigo imediato?\n\n"
-    "Se houver risco imediato, procure uma UPA ou pronto-socorro "
-    "ou ligue para o SAMU (192). Se possível, não fique sozinho, "
-    "avise alguém de confiança e afaste-se de qualquer coisa "
-    "que possa utilizar para se machucar.\n\n"
-    "O CVV também oferece apoio emocional gratuito pelo 188."
+    "Sinto muito que você esteja passando por isso, e fico feliz que tenha me contado. "
+    "Você importa.\n\n"
+    "Quero entender melhor: você está pensando em se machucar ou em tirar a sua própria vida "
+    "neste momento? Está em perigo imediato?\n\n"
+    "Se houver risco agora, ligue para o SAMU (192) ou procure uma UPA ou pronto-socorro. "
+    "Se possível, não fique sozinho(a): avise alguém de confiança e afaste-se de qualquer "
+    "coisa que possa usar para se machucar.\n\n"
+    "O CVV oferece apoio emocional gratuito, 24 horas, pelo 188."
+)
+
+MSG_APOIO = (
+    "Sinto muito que esteja tão pesado. Obrigado por me contar.\n\n"
+    "Quando você fala em desistir, está pensando em se machucar ou em acabar com a sua vida? "
+    "Pode me dizer com sinceridade.\n\n"
+    "Você não precisa passar por isso sozinho(a). O CVV atende 24 horas pelo 188 (ligação "
+    "gratuita), e se sentir que corre risco agora, ligue para o SAMU (192)."
 )
 
 
@@ -54,6 +79,13 @@ MSG_CRISE = (
 # ==========================================
 
 REGRAS = [
+
+    (r"\b(muito mal|nao estou bem|nao ando bem|nao ando passando bem|pessimo|horrivel|destruid\w*)\b", [
+        "Sinto muito que você esteja assim. Obrigado por me contar. "
+        "Quer me dizer o que está pesando mais agora?",
+
+        "Estou aqui com você. O que aconteceu para você se sentir tão mal?"
+    ]),
 
     (r"\b(ansios\w*|ansiedade|nervos\w*|panico|agita\w*)\b", [
         "Sinto muito que esteja passando por isso. "
@@ -71,7 +103,7 @@ REGRAS = [
         "Há quanto tempo vem se sentindo dessa maneira?"
     ]),
 
-    (r"\b(vici\w*|dependencia|fumar|cigarro|bebida|drogas|apostas|apostar)\b", [
+    (r"\b(vici\w*|dependencia|fum\w*|cigarro|bebid\w*|beb\w*|drogas|maconha|apostas|apostar)\b", [
         "Obrigado por compartilhar isso comigo. "
         "Você sente que está perdendo o controle sobre esse hábito?",
 
@@ -141,11 +173,12 @@ REGRAS = [
         "Há quanto tempo isso vem acontecendo?"
     ]),
 
-    (r"\b(respiracao|respirar|relaxar|calma)\b", [
+    (r"\b(respiracao|respirar|relaxar|calma|exercicio)\b", [
         "Vamos tentar um exercício simples:\n"
-        "1. Inspire suavemente pelo nariz.\n"
-        "2. Solte o ar devagar.\n"
-        "3. Repita algumas vezes, sem forçar.\n\n"
+        "1. Inspire pelo nariz contando 4.\n"
+        "2. Segure o ar contando 4.\n"
+        "3. Solte devagar pela boca contando 6.\n"
+        "Repita 5 vezes, sem forçar.\n\n"
         "Como você está se sentindo?"
     ]),
 
@@ -161,7 +194,7 @@ REGRAS = [
         "Lembre-se de que buscar apoio também é importante."
     ]),
 
-    (r"\b(estou feliz|estou animado|estou otimo|hoje estou bem|estou tranquilo)\b", [
+    (r"\b(estou feliz|estou animado|estou animada|estou otimo|estou otima|hoje estou bem|estou tranquilo|estou tranquila|estou bem)\b", [
         "Que bom saber disso! O que aconteceu de positivo no seu dia?"
     ])
 ]
@@ -183,14 +216,33 @@ GENERICAS = [
     "Você poderia me explicar um pouco mais?"
 ]
 
+_ultima = {"texto": None}
+
+
+def _sortear(opcoes):
+    """Sorteia uma resposta evitando repetir a anterior."""
+    candidatas = [o for o in opcoes if o != _ultima["texto"]] or opcoes
+    escolhida = random.choice(candidatas)
+    _ultima["texto"] = escolhida
+    return escolhida
+
 
 # ==========================================
-# 5. FUNCAO DE DETECCAO DE CRISE
+# 5. DETECCAO DE CRISE
 # ==========================================
+
+def nivel_risco(texto):
+    """Devolve 'alto', 'medio' ou None."""
+    t = normalizar(texto)
+    if CRISE_ALTA.search(t):
+        return "alto"
+    if CRISE_MEDIA.search(t):
+        return "medio"
+    return None
+
 
 def em_crise(texto):
-    texto = normalizar(texto)
-    return bool(CRISE.search(texto))
+    return nivel_risco(texto) is not None
 
 
 # ==========================================
@@ -198,29 +250,23 @@ def em_crise(texto):
 # ==========================================
 
 def gerar_resposta(texto):
-
-    texto = normalizar(texto)
-
     # Seguranca sempre em primeiro lugar
-    if em_crise(texto):
+    nivel = nivel_risco(texto)
+    if nivel == "alto":
         return MSG_CRISE
+    if nivel == "medio":
+        return MSG_APOIO
 
-    # Procura uma regra correspondente
+    t = normalizar(texto)
     for padrao, respostas in REGRAS:
+        if re.search(padrao, t):
+            return _sortear(respostas)
 
-        if re.search(padrao, texto):
-            return random.choice(respostas)
-
-    # Resposta padrao
-    return random.choice(GENERICAS)
+    return _sortear(GENERICAS)
 
 
 # ==========================================
-# 7. INICIAR CHATBOT
-# ==========================================
-
-# ==========================================
-# 7. INICIAR CHATBOT (só quando rodar python bot.py)
+# 7. TESTE NO TERMINAL (python bot.py)
 # ==========================================
 
 if __name__ == "__main__":
