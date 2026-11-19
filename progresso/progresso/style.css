@@ -1,0 +1,141 @@
+:root {
+  --azul: #4f84f5;
+  --roxo: #b28cf2;
+  --fundo-topo: #4a74b5;
+  --fundo-meio: #a6c1e8;
+  --texto-botao: #8a8f98;
+  --branco: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: "Poppins", "Segoe UI", system-ui, sans-serif;
+  background: #0d0f14;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- Tela ---------- */
+.tela {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 56px) 24px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  background: radial-gradient(ellipse at 50% 62%, var(--fundo-meio) 0%, #8fb0e3 35%, var(--fundo-topo) 100%);
+}
+
+/* ---------- Voltar ---------- */
+.voltar {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+  border-radius: 50%;
+}
+.voltar svg {
+  width: 30px; height: 30px;
+  fill: none; stroke: var(--branco); stroke-width: 2.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.voltar:focus-visible { outline: 3px solid var(--branco); outline-offset: 2px; }
+
+/* ---------- Logo ---------- */
+.logo {
+  position: relative;
+  z-index: 2;
+  width: 190px;
+  height: 190px;
+  display: grid;
+  place-items: center;
+  margin-top: 32px;
+}
+.logo__anel { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.logo__anel circle { fill: none; stroke-width: 20; }
+.l-azul { stroke: var(--azul); }
+.l-roxo { stroke: var(--roxo); stroke-dasharray: 105 239; stroke-dashoffset: -4; stroke-linecap: round; }
+
+.logo h1 {
+  position: relative;
+  font-size: clamp(2.6rem, 13vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--branco);
+  line-height: 1;
+}
+
+/* ---------- Menu ---------- */
+.menu {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.botao {
+  min-height: 64px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  line-height: 1.25;
+  color: var(--texto-botao);
+  background: var(--branco);
+  border-radius: 20px;
+  transition: transform .15s ease, box-shadow .15s ease, color .15s ease;
+}
+.botao:hover { color: var(--azul); box-shadow: 0 6px 18px rgba(30, 60, 120, .25); }
+.botao:active { transform: scale(.98); }
+.botao:focus-visible { outline: 3px solid var(--azul); outline-offset: 3px; }
+
+/* ---------- Rodapé ---------- */
+.rodape {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  padding-top: 40px;
+  font-size: 0.8rem;
+  color: var(--branco);
+  text-align: center;
+}
+
+/* ---------- Anéis decorativos ---------- */
+.anel { position: absolute; z-index: 1; pointer-events: none; }
+.anel circle { fill: none; stroke-width: 20; }
+.anel .a-azul { stroke: var(--azul); }
+.anel .a-roxo { stroke: var(--roxo); stroke-dasharray: 120 239; }
+
+.anel--esquerda { width: 150px; left: -105px; top: 42%; transform: rotate(-20deg); }
+.anel--direita  { width: 170px; right: -105px; top: 71%; transform: rotate(-80deg); }
+.anel--base     { width: 190px; left: -70px; bottom: -85px; transform: rotate(10deg); }
+
+/* ---------- Telas baixas / acessibilidade ---------- */
+@media (max-height: 700px) {
+  .logo { width: 150px; height: 150px; margin-top: 16px; }
+  .menu { gap: 14px; margin-top: 24px; }
+  .botao { min-height: 56px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .botao { transition: none; }
+}
