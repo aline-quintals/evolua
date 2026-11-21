@@ -1,13 +1,26 @@
+
 import { Tabs } from 'expo-router';
 
 export default function PrincipalLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
-      <Tabs.Screen name="home" options={{ title: 'Home' }} />
-      <Tabs.Screen name="evolua" options={{ title: 'Evolua' }} />
-      <Tabs.Screen name="chat" options={{ title: 'Chat' }} />
-      <Tabs.Screen name="progresso" options={{ title: 'Progresso' }} />
-      <Tabs.Screen name="saiba-mais" options={{ title: 'Saiba +' }} />
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { display: 'none' },
+      }}
+    >
+      <Tabs.Screen name="home" />
+      <Tabs.Screen name="evolua" />
+      <Tabs.Screen name="chat" />
+      <Tabs.Screen name="progresso" />
+      <Tabs.Screen name="saiba-mais" />
+
+      <Tabs.Screen name="exercicios" />
+      <Tabs.Screen name="bem-estar" />
+      <Tabs.Screen name="questionarios" />
+      <Tabs.Screen name="metas" />
+      <Tabs.Screen name="configuracoes" />
+      <Tabs.Screen name="notificacoes" />
     </Tabs>
   );
 }

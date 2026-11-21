@@ -494,11 +494,11 @@ export const TAMANHO_MAX_FOTO = 5 * 1024 * 1024; // 5 MB
 export type ChaveAtividade = 'checkinEmocional' | 'evolucaoPessoal' | 'questionarios' | 'exercicios' | 'metas';
 
 export const ROTAS_ATIVIDADES: Record<ChaveAtividade, Href | null> = {
-  checkinEmocional: null, // ligar à página de histórico de check-ins
-  evolucaoPessoal: null,  // HOME → "Evolução Pessoal": ligar à página de evolução pessoal
-  questionarios: null,    // HOME ("Meus Questionários"): ligar à página de questionários
-  exercicios: null,       // HOME ("Meus Exercícios"): ligar à página de exercícios
-  metas: null,            // HOME ("Minhas Metas"): ligar à página de metas
+  checkinEmocional: null,
+  evolucaoPessoal: '/principal/evolua' as Href,
+  questionarios: '/principal/questionarios' as Href,
+  exercicios: '/principal/exercicios' as Href,
+  metas: '/principal/metas' as Href,
 };
 
 export function abrirAtividade(chave: ChaveAtividade): void {
