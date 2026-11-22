@@ -16,10 +16,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cores, fontes } from '../../tema';
-
+import Svg, { Circle, ClipPath, Defs, G, Path, RadialGradient, Stop } from 'react-native-svg';
 import {
   BotaoDestaque,
-  Cabecalho,
   IconeNome,
   MenuInferior,
   NavegacaoContext,
@@ -27,7 +26,10 @@ import {
   dataLocalISO,
   estilos,
   gerarId,
+  sairDaConta,
+  useEvolua,
   useLayoutInfo,
+  useNavegacao,
   useTecladoVisivel,
 } from './compartilhado';
 import TelaConfiguracoes from './configuracoes';
@@ -437,8 +439,174 @@ function Categorias() {
 }
 
 /* =============================================================================
- * 6. TELA E PÁGINA
+ * 6. FAIXA DO TOPO, TELA E PÁGINA
  * ========================================================================== */
+
+/**
+ * Faixa fixa no topo (mesmo fundo e linha azul do menu inferior):
+ * lua + "Evolua" à esquerda; configurações, notificações e sair à direita.
+ */
+function FaixaTopo() {
+  const insets = useSafeAreaInsets();
+  const { desktop, estreito, larguraMax } = useLayoutInfo();
+  const { irTela } = useNavegacao();
+  const naoLidas = useEvolua((e) => e.notificacoes).filter((n) => n.status === 'nao_lida').length;
+  const tamIcone = estreito ? 24 : 26;
+
+  return (
+<View style={[local.faixaTitulo, { paddingTop: insets.top + FAIXA_ESPACO_CIMA }]}>
+      <View style={[local.faixaInterna, { maxWidth: larguraMax, paddingHorizontal: desktop ? 32 : 14 }]}>
+        <View style={local.faixaMarca} accessibilityRole="header">
+          <Text
+            style={[local.tituloPagina, { fontSize: desktop ? 36 : estreito ? 26 : 32 }]}
+            numberOfLines={1}
+          >
+            Evolua
+          </Text>
+        </View>
+
+        <View style={estilos.iconesLinha}>
+          <Pressable style={estilos.iconeBtn} onPress={() => irTela('configuracoes')} accessibilityRole="button" accessibilityLabel="Abrir Configurações">
+            <Ionicons name="settings-outline" size={tamIcone} color={cores.azulMarinho} />
+          </Pressable>
+          <Pressable
+            style={estilos.iconeBtn}
+            onPress={() => irTela('notificacoes')}
+            accessibilityRole="button"
+            accessibilityLabel={naoLidas > 0 ? `Abrir Notificações, ${naoLidas} não lidas` : 'Abrir Notificações'}
+          >
+            <Ionicons name="notifications-outline" size={tamIcone} color={cores.azulMarinho} />
+            {naoLidas > 0 && (
+              <View style={estilos.selo}><Text style={estilos.seloTexto}>{naoLidas}</Text></View>
+            )}
+          </Pressable>
+          <Pressable style={estilos.iconeBtn} onPress={sairDaConta} accessibilityRole="button" accessibilityLabel="Sair da conta">
+            <Ionicons name="log-out-outline" size={tamIcone} color={cores.azulMarinho} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/* =============================================================================
+ * FASES DA LUA (decoração, sem clique)
+ * -----------------------------------------------------------------------------
+ * 7 luas: crescente, quarto crescente, gibosa crescente, CHEIA no centro e depois
+ * o lado minguante espelhado. `tamanho` é a medida de cada lua no celular.
+ * ========================================================================== */
+
+type FaseDaLua = {
+  crescente: boolean; // true = lado iluminado à direita (lua crescendo)
+  gibosa: boolean;    // true = mais da metade iluminada
+  rx: number;         // largura da sombra: 0 = quarto, perto de 1 = bem fina ou quase cheia
+  cheia?: boolean;
+  tamanho: number;
+};
+
+const FASES_DA_LUA: ReadonlyArray<FaseDaLua> = [
+  { crescente: true, gibosa: false, rx: 0.62, tamanho: 26 },
+  { crescente: true, gibosa: false, rx: 0, tamanho: 32 },
+  { crescente: true, gibosa: true, rx: 0.55, tamanho: 38 },
+  { crescente: true, gibosa: true, rx: 0, cheia: true, tamanho: 50 },
+  { crescente: false, gibosa: true, rx: 0.55, tamanho: 38 },
+  { crescente: false, gibosa: false, rx: 0, tamanho: 32 },
+  { crescente: false, gibosa: false, rx: 0.62, tamanho: 26 },
+];
+
+function IconeFaseLua({ fase, escala, indice, brilho }: {
+  fase: FaseDaLua; escala: number; indice: number; brilho: Animated.Value;
+}) {
+  const raio = 48;
+  const rx = raio * fase.rx;
+  const lado = fase.crescente ? 1 : 0;
+  const sentidoSombra = fase.gibosa === fase.crescente ? 1 : 0;
+  const sombra = rx < 0.5 ? 'L 50 2' : `A ${rx} ${raio} 0 0 ${sentidoSombra} 50 2`;
+  const formaClara = fase.cheia
+    ? 'M 50 2 A 48 48 0 0 1 50 98 A 48 48 0 0 1 50 2 Z'
+    : `M 50 2 A ${raio} ${raio} 0 0 ${lado} 50 98 ${sombra} Z`;
+
+  const tam = fase.tamanho * escala;
+  const tamHalo = tam * 2;
+  const sobra = (tamHalo - tam) / 2;
+
+  return (
+    <View style={{ width: tam, height: tam }}>
+      {/* Brilho amarelado em volta da lua (pulsa devagar) */}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute', left: -sobra, top: -sobra,
+          opacity: brilho.interpolate({ inputRange: [0, 1], outputRange: fase.cheia ? [0.7, 1] : [0.45, 0.85] }),
+        }}
+      >
+        <Svg width={tamHalo} height={tamHalo} viewBox="0 0 100 100">
+          <Defs>
+            <RadialGradient id={`halo${indice}`} cx="50%" cy="50%" r="50%">
+              <Stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />
+              <Stop offset="0.3" stopColor="#b8c3dc" stopOpacity="0.8" />
+              <Stop offset="0.6" stopColor="#c5dee8" stopOpacity="0.3" />
+              <Stop offset="1" stopColor="#cacfd8" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Circle cx={50} cy={50} r={50} fill={`url(#halo${indice})`} />
+        </Svg>
+      </Animated.View>
+
+      {/* A lua: lado sem luz + parte iluminada (branco quente) com crateras suaves */}
+      <Svg width={tam} height={tam} viewBox="0 0 100 100">
+        <Defs>
+          <RadialGradient id={`lua${indice}`} cx="38%" cy="35%" r="75%">
+            <Stop offset="0" stopColor="#ffffff" />
+            <Stop offset="0.6" stopColor="#f6f6f6" />
+            <Stop offset="1" stopColor="#ffffff" />
+          </RadialGradient>
+          <ClipPath id={`forma${indice}`}>
+            <Path d={formaClara} />
+          </ClipPath>
+        </Defs>
+        <Circle cx={50} cy={50} r={raio} fill="#d8eeffb6" stroke="#B5C6E6" strokeWidth={1.5} />
+        <G clipPath={`url(#forma${indice})`}>
+          <Circle cx={50} cy={50} r={raio} fill={`url(#lua${indice})`} />
+          <Circle cx={38} cy={36} r={7} fill="#ffffff" opacity={0.5} />
+          <Circle cx={62} cy={58} r={9} fill="#ffffff" opacity={0.5} />
+          <Circle cx={45} cy={74} r={5} fill="#fefefe" opacity={0.5} />
+          <Circle cx={66} cy={30} r={4} fill="#ffffff" opacity={0.5} />
+        </G>
+      </Svg>
+    </View>
+  );
+}
+
+function FasesDaLua() {
+  const { estreito } = useLayoutInfo();
+  const brilho = useRef(new Animated.Value(0)).current;
+
+  // Brilho que sobe e desce devagar.
+  useEffect(() => {
+    const nativo = Platform.OS !== 'web';
+    const animacao = Animated.loop(
+      Animated.sequence([
+        Animated.timing(brilho, { toValue: 1, duration: 2400, easing: Easing.inOut(Easing.sin), useNativeDriver: nativo }),
+        Animated.timing(brilho, { toValue: 0, duration: 2400, easing: Easing.inOut(Easing.sin), useNativeDriver: nativo }),
+      ]),
+    );
+    animacao.start();
+    return () => animacao.stop();
+  }, [brilho]);
+
+  return (
+    <View
+      style={local.fasesLua}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      {FASES_DA_LUA.map((f, i) => (
+        <IconeFaseLua key={i} fase={f} escala={estreito ? 0.85 : 1} indice={i} brilho={brilho} />
+      ))}
+    </View>
+  );
+}
 
 function TelaEvolua() {
   const { desktop } = useLayoutInfo();
@@ -452,11 +620,10 @@ function TelaEvolua() {
 
   return (
     <>
-      <Cabecalho titulo="Evolua" mostrarFoto />
-
-      <Text style={estilos.tituloSaudacao}>Um momento para você.</Text>
-      <Text style={[estilos.frase, desktop && { fontSize: 17, lineHeight: 24 }]}>
-        Pequenos passos também são evolução. Escolha como deseja cuidar de si hoje.
+      <FasesDaLua />
+      <Text style={[estilos.frase, desktop && { fontSize: 17, lineHeight: 18 }]}>
+        Pequenos passos também são evolução.
+        Escolha como deseja cuidar de si hoje.
       </Text>
 
       {desktop ? (
@@ -504,6 +671,8 @@ export default function Evolua() {
     return () => sub.remove();
   }, [tela, irTela]);
 
+  const noEvolua = tela === 'evolua';
+
   return (
     <NavegacaoContext.Provider value={{ irTela }}>
       <KeyboardAvoidingView style={estilos.raiz} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -512,12 +681,20 @@ export default function Evolua() {
           locations={[0, 0.58, 1]}
           style={StyleSheet.absoluteFill}
         />
+
+        {/* A faixa fica fixa no topo e ocupa a largura toda; só aparece na tela principal do Evolua. */}
+        {noEvolua && <FaixaTopo />}
+
         <ScrollView
           ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={[
             estilos.conteudo,
-            { maxWidth: larguraMax, paddingHorizontal: desktop ? 32 : 14, paddingTop: insets.top + (desktop ? 24 : 8) },
+            {
+              maxWidth: larguraMax,
+              paddingHorizontal: desktop ? 32 : 14,
+              paddingTop: noEvolua ? ESPACO_APOS_FAIXA : insets.top + (desktop ? 24 : 8),
+            },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -526,7 +703,7 @@ export default function Evolua() {
           {tela === 'configuracoes' && <TelaConfiguracoes />}
           {tela === 'notificacoes' && <TelaNotificacoes />}
         </ScrollView>
-        {!tecladoVisivel && <MenuInferior ativo={tela === 'evolua' ? 'evolua' : null} />}
+        {!tecladoVisivel && <MenuInferior ativo={noEvolua ? 'evolua' : null} />}
       </KeyboardAvoidingView>
     </NavegacaoContext.Provider>
   );
@@ -535,8 +712,30 @@ export default function Evolua() {
 /* ---------- Estilos só desta tela (o resto vem de `estilos`) ---------- */
 const TAMANHO_ANEL = 160;
 const TAMANHO_MIOLO = 96;
+/* Ajuste estes números para subir/descer a faixa e a frase (em pixels). */
+const FAIXA_ESPACO_CIMA = 24;   // espaço acima da lua e dos ícones (aumente para descer a faixa)
+const FAIXA_ESPACO_BAIXO = 26;  // espaço abaixo deles (aumente para a faixa ficar mais alta)
+const ESPACO_APOS_FAIXA = 30;   // distância entre a faixa e a frase "Pequenos passos…"
 
 const local = StyleSheet.create({
+  /* Faixa do topo: mesmas cores do menu inferior */
+  faixaTitulo: {
+    width: '100%',
+    backgroundColor: 'rgba(205, 229, 247, 0.68)',
+    borderBottomWidth: 3,
+    borderBottomColor: '#397FB5',
+    paddingBottom: FAIXA_ESPACO_BAIXO,
+  },
+  faixaInterna: {
+    width: '100%',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  faixaMarca: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  tituloPagina: { fontFamily: fontes.titulo, color: cores.azulMarinho },
+    fasesLua: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   topoCartao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   tag: { backgroundColor: cores.verdeSuave, borderRadius: 12, paddingVertical: 4, paddingHorizontal: 10 },
   tagTexto: { fontFamily: fontes.textoMedio, fontSize: 12, color: cores.azulMarinho },

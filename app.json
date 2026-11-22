@@ -40,7 +40,8 @@
           "photosPermission": "O Evolua precisa acessar suas fotos para você escolher a foto de perfil.",
           "cameraPermission": "O Evolua precisa acessar a câmera para você tirar sua foto de perfil."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
