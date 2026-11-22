@@ -36,6 +36,8 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { cores, fontes } from '../../tema';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 /* =============================================================================
  * 2. TIPOS E INTERFACES
@@ -89,11 +91,62 @@ export interface Notificacao {
   status: StatusNotificacao;
 }
 
+/** Registro de exercício concluído. */
+export interface RegistroExercicio {
+  id: string;
+  usuarioId: string;
+  atividadeId: string;
+  nome: string;
+  categoria?: string;
+  criadoEmISO: string;
+  dataLocal: string;
+}
+
+/** Registro de atividade de bem-estar concluída. */
+export interface RegistroBemEstar {
+  id: string;
+  usuarioId: string;
+  atividadeId: string;
+  nome: string;
+  categoria?: string;
+  criadoEmISO: string;
+  dataLocal: string;
+}
+
+/** Registro de questionário respondido. Não armazena as respostas pessoais. */
+export interface RegistroQuestionario {
+  id: string;
+  usuarioId: string;
+  questionarioId: string;
+  nome: string;
+  categoria?: string;
+  criadoEmISO: string;
+  dataLocal: string;
+}
+
+/** Estrutura das metas do usuário. */
+export interface MetaEvolua {
+  id: string;
+  titulo: string;
+  descricao: string;
+  tipo: 'manual' | 'automatica';
+  categoria?: 'exercicio' | 'bem-estar' | 'questionario' | 'checkin';
+  frequencia: 'unica' | 'semanal';
+  alvo: number;
+  concluida: boolean;
+  criadaEmISO: string;
+}
+
 export interface EstadoEvolua {
   perfil: PerfilUsuario;
-  checkins: RegistroCheckin[];      // mais recente primeiro
+  checkins: RegistroCheckin[];
   notificacoes: Notificacao[];
   preferencias: { idioma: 'pt-BR' };
+
+  exerciciosConcluidos: RegistroExercicio[];
+  atividadesBemEstar: RegistroBemEstar[];
+  questionariosRespondidos: RegistroQuestionario[];
+  metas: MetaEvolua[];
 }
 
 /** Telas internas deste arquivo. */
@@ -189,25 +242,7 @@ export function useTecladoVisivel(): boolean {
   return visivel;
 }
 
-/* =============================================================================
- * 4. DADOS COMPARTILHADOS (STORE CENTRAL) E CONTA (MOCKUP)
- * -----------------------------------------------------------------------------
- * Estado único em memória, fora do React, lido com useSyncExternalStore.
- * Qualquer arquivo pode importar os hooks/funções exportados daqui.
- *
- * O QUE CADA TELA FAZ COM ELE:
- *   - Trocar a foto (Configurações)  → atualiza Home e Notificações.
- *   - Trocar o apelido               → atualiza "Olá, [apelido]!" na Home.
- *   - Salvar um check-in             → entra em estado.checkins (ver guia abaixo).
- *   - Mudar status de notificação    → muda a aba em que ela aparece.
- *
- * MOCKUP: nada é persistido (sem banco, sem AsyncStorage): ao fechar o app os
- * dados se perdem. Quando houver servidor, carregue os dados com
- * inicializarDadosEvolua() e grave as mudanças usando os ouvintes
- * (aoSalvarCheckin, aoMudarPerfil, aoMudarNotificacoes).
- * ========================================================================== */
 
-/** Valores iniciais de PLACEHOLDER. Substitua com inicializarDadosEvolua(). */
 export const PERFIL_PADRAO: PerfilUsuario = {
   id: 'usuario-local',
   nome: 'Pedro',
@@ -223,17 +258,6 @@ export const PERFIL_PADRAO: PerfilUsuario = {
 
 export const horasAtrasISO = (h: number): string => new Date(Date.now() - h * 3600 * 1000).toISOString();
 
-/**
- * ===========================================================================
- * >>> NOTIFICAÇÕES — ONDE EDITAR TÍTULO E MENSAGEM <<<
- * Cada item abaixo é uma notificação:
- *   titulo   → título exibido no cartão (EDITE AQUI)
- *   mensagem → texto completo; a prévia é cortada com "..." automaticamente (EDITE AQUI)
- *   dataISO  → opcional; remova a linha para não mostrar data
- *   status   → 'nao_lida' | 'lida' | 'arquivada' (define em qual aba aparece)
- * Para dados reais, use inicializarDadosEvolua({ notificacoes }).
- * ===========================================================================
- */
 export const NOTIFICACOES_EXEMPLO: Notificacao[] = [
   {
     id: 'notif-1',
@@ -270,7 +294,75 @@ export let estadoAtual: EstadoEvolua = {
   checkins: [],
   notificacoes: NOTIFICACOES_EXEMPLO,
   preferencias: { idioma: 'pt-BR' },
+
+  exerciciosConcluidos: [],
+  atividadesBemEstar: [],
+  questionariosRespondidos: [],
+  metas: [],
 };
+
+/* =============================================================================
+ * PERSISTÊNCIA LOCAL — ASYNC STORAGE
+ * ========================================================================== */
+
+const CHAVE_STORAGE_EVOLUA = '@evolua:estado:v1';
+
+let persistenciaPronta = false;
+let filaPersistencia = Promise.resolve();
+
+/** Salva o estado completo sem bloquear a interface. */
+function persistirEstadoEvolua(): void {
+  if (!persistenciaPronta) return;
+
+  const copia = JSON.stringify(estadoAtual);
+
+  filaPersistencia = filaPersistencia
+    .then(() => AsyncStorage.setItem(CHAVE_STORAGE_EVOLUA, copia))
+    .catch((erro) => {
+      console.warn('Não foi possível salvar os dados do Evolua:', erro);
+    });
+}
+
+/**
+ * Carrega os dados salvos no dispositivo.
+ * Deve ser chamada na inicialização do aplicativo.
+ */
+export async function inicializarPersistenciaEvolua(): Promise<void> {
+  if (persistenciaPronta) return;
+
+  try {
+    const salvo = await AsyncStorage.getItem(CHAVE_STORAGE_EVOLUA);
+
+    if (salvo) {
+      const dados = JSON.parse(salvo) as Partial<EstadoEvolua>;
+
+      definirEstado({
+        ...estadoAtual,
+        ...dados,
+        perfil: {
+          ...estadoAtual.perfil,
+          ...dados.perfil,
+          contato: {
+            ...estadoAtual.perfil.contato,
+            ...dados.perfil?.contato,
+          },
+        },
+        checkins: dados.checkins ?? estadoAtual.checkins,
+        notificacoes: dados.notificacoes ?? estadoAtual.notificacoes,
+        preferencias: dados.preferencias ?? estadoAtual.preferencias,
+        exerciciosConcluidos: dados.exerciciosConcluidos ?? [],
+        atividadesBemEstar: dados.atividadesBemEstar ?? [],
+        questionariosRespondidos: dados.questionariosRespondidos ?? [],
+        metas: dados.metas ?? [],
+      });
+    }
+  } catch (erro) {
+    console.warn('Não foi possível recuperar os dados do Evolua:', erro);
+  } finally {
+    persistenciaPronta = true;
+    persistirEstadoEvolua();
+  }
+}
 
 export const ouvintesEstado = new Set<() => void>();
 export const ouvintesCheckin = new Set<(r: RegistroCheckin) => void>();
@@ -280,6 +372,7 @@ export const ouvintesNotificacoes = new Set<(n: Notificacao[]) => void>();
 export function definirEstado(novo: EstadoEvolua): void {
   estadoAtual = novo;
   ouvintesEstado.forEach((l) => l());
+  persistirEstadoEvolua();
 }
 
 /** Leitura pontual do estado (fora de componentes). Dentro de componentes use useEvolua(). */
@@ -325,6 +418,139 @@ export function definirStatusNotificacao(id: string, status: StatusNotificacao):
   const notificacoes = estadoAtual.notificacoes.map((n) => (n.id === id ? { ...n, status } : n));
   definirEstado({ ...estadoAtual, notificacoes });
   ouvintesNotificacoes.forEach((l) => l(notificacoes));
+}
+
+/* =============================================================================
+ * HISTÓRICO DE ATIVIDADES
+ * ========================================================================== */
+
+/** Registra um exercício concluído. Cada conclusão gera um novo registro. */
+export function registrarExercicioConcluido(dados: {
+  atividadeId: string;
+  nome: string;
+  categoria?: string;
+}): RegistroExercicio {
+  const agora = new Date();
+
+  const registro: RegistroExercicio = {
+    id: gerarId('exercicio'),
+    usuarioId: estadoAtual.perfil.id,
+    atividadeId: dados.atividadeId,
+    nome: dados.nome,
+    categoria: dados.categoria,
+    criadoEmISO: agora.toISOString(),
+    dataLocal: dataLocalISO(agora),
+  };
+
+  definirEstado({
+    ...estadoAtual,
+    exerciciosConcluidos: [
+      registro,
+      ...estadoAtual.exerciciosConcluidos,
+    ],
+  });
+
+  return registro;
+}
+
+/** Registra uma atividade de bem-estar concluída. */
+export function registrarAtividadeBemEstar(dados: {
+  atividadeId: string;
+  nome: string;
+  categoria?: string;
+}): RegistroBemEstar {
+  const agora = new Date();
+
+  const registro: RegistroBemEstar = {
+    id: gerarId('bem-estar'),
+    usuarioId: estadoAtual.perfil.id,
+    atividadeId: dados.atividadeId,
+    nome: dados.nome,
+    categoria: dados.categoria,
+    criadoEmISO: agora.toISOString(),
+    dataLocal: dataLocalISO(agora),
+  };
+
+  definirEstado({
+    ...estadoAtual,
+    atividadesBemEstar: [
+      registro,
+      ...estadoAtual.atividadesBemEstar,
+    ],
+  });
+
+  return registro;
+}
+
+/** Registra que um questionário foi respondido, sem guardar suas respostas. */
+export function registrarQuestionarioRespondido(dados: {
+  questionarioId: string;
+  nome: string;
+  categoria?: string;
+}): RegistroQuestionario {
+  const agora = new Date();
+
+  const registro: RegistroQuestionario = {
+    id: gerarId('questionario'),
+    usuarioId: estadoAtual.perfil.id,
+    questionarioId: dados.questionarioId,
+    nome: dados.nome,
+    categoria: dados.categoria,
+    criadoEmISO: agora.toISOString(),
+    dataLocal: dataLocalISO(agora),
+  };
+
+  definirEstado({
+    ...estadoAtual,
+    questionariosRespondidos: [
+      registro,
+      ...estadoAtual.questionariosRespondidos,
+    ],
+  });
+
+  return registro;
+}
+
+/* =============================================================================
+ * METAS
+ * ========================================================================== */
+
+/** Cria uma meta pessoal ou automática. */
+export function criarMeta(
+  dados: Omit<MetaEvolua, 'id' | 'criadaEmISO'>
+): MetaEvolua {
+  const meta: MetaEvolua = {
+    ...dados,
+    id: gerarId('meta'),
+    criadaEmISO: new Date().toISOString(),
+  };
+
+  definirEstado({
+    ...estadoAtual,
+    metas: [meta, ...estadoAtual.metas],
+  });
+
+  return meta;
+}
+
+/** Atualiza uma meta existente. */
+export function atualizarMeta(
+  id: string,
+  alteracoes: Partial<Omit<MetaEvolua, 'id' | 'criadaEmISO'>>
+): void {
+  const metas = estadoAtual.metas.map((meta) =>
+    meta.id === id ? { ...meta, ...alteracoes } : meta
+  );
+
+  definirEstado({ ...estadoAtual, metas });
+}
+
+/** Exclui uma meta. */
+export function excluirMeta(id: string): void {
+  definirEstado({
+    ...estadoAtual,
+    metas: estadoAtual.metas.filter((meta) => meta.id !== id),
+  });
 }
 
 /** Registra um ouvinte chamado a cada check-in salvo ou refeito. Retorna a função para cancelar. */
@@ -430,13 +656,39 @@ export function sairDaConta(): void {
   router.replace('/acesso/login' as Href);
 }
 
-/** Apaga os dados locais (perfil, check-ins, notificações) e volta para o login. */
+
+/** Apaga os dados locais e volta para o login. */
 export function excluirContaLocal(): void {
   senhaLocal = null;
-  definirEstado({ perfil: PERFIL_PADRAO, checkins: [], notificacoes: NOTIFICACOES_EXEMPLO, preferencias: { idioma: 'pt-BR' } });
+
+  const estadoLimpo: EstadoEvolua = {
+    perfil: PERFIL_PADRAO,
+    checkins: [],
+    notificacoes: NOTIFICACOES_EXEMPLO,
+    preferencias: { idioma: 'pt-BR' },
+    exerciciosConcluidos: [],
+    atividadesBemEstar: [],
+    questionariosRespondidos: [],
+    metas: [],
+  };
+
+  estadoAtual = estadoLimpo;
+  ouvintesEstado.forEach((l) => l());
+
+  persistenciaPronta = true;
+
+  // A remoção acontece depois de qualquer salvamento pendente.
+  filaPersistencia = filaPersistencia
+    .then(() => AsyncStorage.removeItem(CHAVE_STORAGE_EVOLUA))
+    .catch((erro) => {
+      console.warn('Não foi possível limpar os dados locais:', erro);
+    });
+
   ouvintesPerfil.forEach((l) => l(PERFIL_PADRAO));
+
   router.replace('/acesso/login' as Href);
 }
+
 
 /* =============================================================================
  * 5. FUNÇÕES AUXILIARES

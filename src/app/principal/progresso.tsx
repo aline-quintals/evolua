@@ -1,9 +1,3 @@
-// src/app/principal/progresso.tsx
-//
-// Tela "Progresso" no mesmo padrão da Home: mesmo fundo, mesmo cabeçalho
-// (foto + configurações + notificações + sair), mesmo menu inferior e
-// cartões no estilo das atividades. Tudo vem de ./compartilhado.
-
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
@@ -22,7 +16,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cores, fontes } from '../../tema';
 
 import {
-  Cabecalho,
   EMOCOES,
   IconeNome,
   MenuInferior,
@@ -32,19 +25,15 @@ import {
   abrirAtividade,
   avisar,
   estilos,
+  sairDaConta,
   useEvolua,
   useLayoutInfo,
+  useNavegacao,
   useTecladoVisivel,
 } from './compartilhado';
 import TelaConfiguracoes from './configuracoes';
 import TelaNotificacoes from './notificacoes';
 
-/* =============================================================================
- * ROTAS DESTA TELA — PONTO DE INTEGRAÇÃO
- * Os cinco primeiros itens reaproveitam ROTAS_ATIVIDADES (compartilhado.tsx),
- * então ligar a rota lá já funciona aqui e na Home. Só "Relatórios" é daqui:
- * troque null pelo caminho da página quando ela existir (ex.: '/principal/relatorios').
- * ========================================================================== */
 const ROTA_RELATORIOS: Href | null = null;
 
 type ItemProgresso = {
@@ -96,7 +85,6 @@ const ITENS: ReadonlyArray<ItemProgresso> = [
   },
 ];
 
-/* ---------- Cartão de item (mesmo visual dos cartões de atividade da Home) ---------- */
 function CartaoProgresso({ item }: { item: ItemProgresso }) {
   return (
     <Pressable
@@ -116,7 +104,6 @@ function CartaoProgresso({ item }: { item: ItemProgresso }) {
   );
 }
 
-/* ---------- Barra de média (0 a 10) ---------- */
 function BarraMedia({ rotulo, valor, cor }: { rotulo: string; valor: number; cor: string }) {
   return (
     <View
@@ -135,7 +122,6 @@ function BarraMedia({ rotulo, valor, cor }: { rotulo: string; valor: number; cor
   );
 }
 
-/* ---------- Cartão "Seu resumo" (usa os check-ins salvos na Home) ---------- */
 function CartaoResumo() {
   const checkins = useEvolua((e) => e.checkins);
 
@@ -150,7 +136,7 @@ function CartaoResumo() {
       ansiedade: media('ansiedade'),
       estresse: media('estresse'),
       energia: media('energia'),
-      ultimo: checkins[0], // mais recente primeiro
+      ultimo: checkins[0],
     };
   }, [checkins]);
 
@@ -201,7 +187,118 @@ function CartaoResumo() {
   );
 }
 
-/* ---------- Conteúdo principal ---------- */
+function CartaoHistoricoExercicios() {
+  const exercicios = useEvolua((e) => e.exerciciosConcluidos);
+
+  const recentes = exercicios.slice(0, 5);
+
+  return (
+    <View style={estilos.cartao}>
+      <View style={local.historicoTopo}>
+        <Text style={estilos.secaoTitulo}>
+          Exercícios concluídos
+        </Text>
+        <View style={local.contadorExercicios}>
+          <Text style={local.contadorTexto}>
+            {exercicios.length}
+          </Text>
+        </View>
+      </View>
+
+      {recentes.length === 0 ? (
+        <Text style={estilos.painelTexto}>
+          Você ainda não concluiu nenhum exercício.
+          Quando finalizar uma atividade e tocar em "Salvar exercício",
+          ela aparecerá aqui.
+        </Text>
+      ) : (
+        <View style={{ gap: 12 }}>
+          {recentes.map((exercicio) => (
+            <View key={exercicio.id} style={local.exercicioHistorico}>
+              <View style={local.iconeHistorico}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={22}
+                  color="#628A57"
+                />
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={local.nomeHistorico}>
+                  {exercicio.nome}
+                </Text>
+                <Text style={local.dataHistorico}>
+                  {new Date(exercicio.criadoEmISO).toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {exercicios.length > 5 && (
+        <Text style={local.maisHistorico}>
+          Mostrando os 5 exercícios mais recentes.
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function FaixaTopo() {
+  const insets = useSafeAreaInsets();
+  const { desktop, estreito, larguraMax } = useLayoutInfo();
+  const { irTela } = useNavegacao();
+  const naoLidas = useEvolua((e) => e.notificacoes).filter((n) => n.status === 'nao_lida').length;
+  const tamIcone = estreito ? 24 : 26;
+
+  return (
+    <View style={[local.faixaTitulo, { paddingTop: insets.top + FAIXA_ESPACO_CIMA }]}>
+      <View style={[local.faixaInterna, { maxWidth: larguraMax, paddingHorizontal: desktop ? 32 : 14 }]}>
+        <View style={local.faixaMarca} accessibilityRole="header">
+          <Ionicons
+            name="stats-chart"
+            size={desktop ? 34 : estreito ? 26 : 30}
+            color={cores.azulEvolua}
+          />
+          <Text
+            style={[local.tituloPagina, { fontSize: desktop ? 36 : estreito ? 26 : 32 }]}
+            numberOfLines={1}
+          >
+            Progresso
+          </Text>
+        </View>
+
+        <View style={estilos.iconesLinha}>
+          <Pressable style={estilos.iconeBtn} onPress={() => irTela('configuracoes')} accessibilityRole="button" accessibilityLabel="Abrir Configurações">
+            <Ionicons name="settings-outline" size={tamIcone} color={cores.azulMarinho} />
+          </Pressable>
+          <Pressable
+            style={estilos.iconeBtn}
+            onPress={() => irTela('notificacoes')}
+            accessibilityRole="button"
+            accessibilityLabel={naoLidas > 0 ? `Abrir Notificações, ${naoLidas} não lidas` : 'Abrir Notificações'}
+          >
+            <Ionicons name="notifications-outline" size={tamIcone} color={cores.azulMarinho} />
+            {naoLidas > 0 && (
+              <View style={estilos.selo}><Text style={estilos.seloTexto}>{naoLidas}</Text></View>
+            )}
+          </Pressable>
+          <Pressable style={estilos.iconeBtn} onPress={sairDaConta} accessibilityRole="button" accessibilityLabel="Sair da conta">
+            <Ionicons name="log-out-outline" size={tamIcone} color={cores.azulMarinho} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function TelaProgresso() {
   const { desktop } = useLayoutInfo();
 
@@ -218,8 +315,6 @@ function TelaProgresso() {
 
   return (
     <>
-      <Cabecalho titulo="Progresso" mostrarFoto />
-
       <Text style={[estilos.frase, desktop && { fontSize: 17, lineHeight: 24 }]}>
         Veja como você tem evoluído, um passo de cada vez.
       </Text>
@@ -229,11 +324,13 @@ function TelaProgresso() {
           <View style={{ flex: 1 }}>{lista}</View>
           <View style={{ flex: 1.1 }}>
             <CartaoResumo />
+            <CartaoHistoricoExercicios />
           </View>
         </View>
       ) : (
         <>
           <CartaoResumo />
+          <CartaoHistoricoExercicios />
           {lista}
         </>
       )}
@@ -241,7 +338,6 @@ function TelaProgresso() {
   );
 }
 
-/* ---------- Página (mesma estrutura da Home) ---------- */
 type TelaAtual = 'progresso' | 'configuracoes' | 'notificacoes';
 
 export default function Progresso() {
@@ -252,23 +348,22 @@ export default function Progresso() {
   const [tela, setTela] = useState<TelaAtual>('progresso');
   const scrollRef = useRef<ScrollView>(null);
 
-  // Esconde a barra padrão das Tabs: só vale o <MenuInferior /> (um único menu).
   useEffect(() => {
     (navigation as any)?.setOptions?.({ tabBarStyle: { display: 'none' }, headerShown: false });
   }, [navigation]);
 
-  // Configurações e Notificações abrem aqui dentro; "voltar" retorna ao Progresso.
   const irTela = useCallback((t: TelaInterna) => {
     setTela(t === 'home' ? 'progresso' : t);
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, []);
 
-  // Botão "voltar" do Android: de Configurações/Notificações volta ao Progresso.
   useEffect(() => {
     if (tela === 'progresso') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { irTela('home'); return true; });
     return () => sub.remove();
   }, [tela, irTela]);
+
+  const noProgresso = tela === 'progresso';
 
   return (
     <NavegacaoContext.Provider value={{ irTela }}>
@@ -278,12 +373,19 @@ export default function Progresso() {
           locations={[0, 0.58, 1]}
           style={StyleSheet.absoluteFill}
         />
+
+        {noProgresso && <FaixaTopo />}
+
         <ScrollView
           ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={[
             estilos.conteudo,
-            { maxWidth: larguraMax, paddingHorizontal: desktop ? 32 : 14, paddingTop: insets.top + (desktop ? 24 : 8) },
+            {
+              maxWidth: larguraMax,
+              paddingHorizontal: desktop ? 32 : 14,
+              paddingTop: noProgresso ? ESPACO_APOS_FAIXA : insets.top + (desktop ? 24 : 8),
+            },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -292,14 +394,33 @@ export default function Progresso() {
           {tela === 'configuracoes' && <TelaConfiguracoes />}
           {tela === 'notificacoes' && <TelaNotificacoes />}
         </ScrollView>
-        {!tecladoVisivel && <MenuInferior ativo={tela === 'progresso' ? 'progresso' : null} />}
+        {!tecladoVisivel && <MenuInferior ativo={noProgresso ? 'progresso' : null} />}
       </KeyboardAvoidingView>
     </NavegacaoContext.Provider>
   );
 }
 
-/* ---------- Estilos só desta tela (o resto vem de `estilos`) ---------- */
+const FAIXA_ESPACO_CIMA = 24;
+const FAIXA_ESPACO_BAIXO = 26;
+const ESPACO_APOS_FAIXA = 30;
+
 const local = StyleSheet.create({
+  faixaTitulo: {
+    width: '100%',
+    backgroundColor: 'rgba(205, 229, 247, 0.68)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(160, 194, 220, 0.45)',
+    paddingBottom: FAIXA_ESPACO_BAIXO,
+  },
+  faixaInterna: {
+    width: '100%',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  faixaMarca: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  tituloPagina: { fontFamily: fontes.titulo, color: cores.azulEvolua },
   lista: { gap: 10, marginBottom: 18 },
   cartaoItem: { width: '100%', minHeight: 72 },
   estatLinha: { flexDirection: 'row', gap: 12 },
@@ -309,4 +430,53 @@ const local = StyleSheet.create({
   ultimoLinha: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14 },
   barraTrilha: { height: 10, borderRadius: 5, backgroundColor: cores.cinzaClaro, overflow: 'hidden', marginTop: 6 },
   barraPreenchida: { height: 10, borderRadius: 5 },
+  historicoTopo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  contadorExercicios: {
+    backgroundColor: '#E8F1E5',
+    minWidth: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contadorTexto: {
+    fontFamily: fontes.titulo,
+    fontSize: 15,
+    color: '#3D5140',
+  },
+  exercicioHistorico: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconeHistorico: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#E8F1E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nomeHistorico: {
+    fontFamily: fontes.textoMedio,
+    fontSize: 14,
+    color: cores.azulMarinho,
+  },
+  dataHistorico: {
+    fontFamily: fontes.texto,
+    fontSize: 12,
+    color: cores.cinzaGrafite,
+    marginTop: 3,
+  },
+  maisHistorico: {
+    fontFamily: fontes.texto,
+    fontSize: 12,
+    color: cores.cinzaGrafite,
+    marginTop: 12,
+  },
 });

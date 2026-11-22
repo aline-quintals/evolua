@@ -16,7 +16,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cores, fontes } from '../../tema';
-import Svg, { Circle, ClipPath, Defs, G, Path, RadialGradient, Stop } from 'react-native-svg';
 import {
   BotaoDestaque,
   IconeNome,
@@ -31,27 +30,17 @@ import {
   useLayoutInfo,
   useNavegacao,
   useTecladoVisivel,
+  registrarExercicioConcluido,
 } from './compartilhado';
 import TelaConfiguracoes from './configuracoes';
 import TelaNotificacoes from './notificacoes';
-
-/* =============================================================================
- * 1. EXERCÍCIOS CONCLUÍDOS (MOCKUP, EM MEMÓRIA)
- * -----------------------------------------------------------------------------
- * Quando a pessoa termina um exercício e toca em "Salvar exercício", o registro
- * entra aqui. Quem fizer a página "Exercícios concluídos" (ou o Progresso) usa:
- *     import { useExerciciosConcluidos } from './evolua';
- *     const lista = useExerciciosConcluidos();   // mais recente primeiro
- * Nada é persistido: ao fechar o app os dados se perdem (igual ao resto do mockup).
- * Se preferir, mova este bloco para o compartilhado.tsx.
- * ========================================================================== */
 
 export interface ExercicioConcluido {
   id: string;
   exercicioId: string;
   titulo: string;
   concluidoEmISO: string;
-  dataLocal: string; // "AAAA-MM-DD" no fuso do usuário
+  dataLocal: string;
 }
 
 let exerciciosConcluidos: ExercicioConcluido[] = [];
@@ -59,6 +48,12 @@ const ouvintesConcluidos = new Set<() => void>();
 
 export function salvarExercicioConcluido(ex: { id: string; nome: string }): ExercicioConcluido {
   const agora = new Date();
+
+  registrarExercicioConcluido({
+    atividadeId: ex.id,
+    nome: ex.nome,
+  });
+
   const registro: ExercicioConcluido = {
     id: gerarId('exercicio'),
     exercicioId: ex.id,
@@ -66,8 +61,10 @@ export function salvarExercicioConcluido(ex: { id: string; nome: string }): Exer
     concluidoEmISO: agora.toISOString(),
     dataLocal: dataLocalISO(agora),
   };
+
   exerciciosConcluidos = [registro, ...exerciciosConcluidos];
   ouvintesConcluidos.forEach((l) => l());
+
   return registro;
 }
 
@@ -79,24 +76,15 @@ export function useExerciciosConcluidos(): ExercicioConcluido[] {
   return useSyncExternalStore(assinar, () => exerciciosConcluidos, () => exerciciosConcluidos);
 }
 
-/* =============================================================================
- * 2. EXERCÍCIOS E O "EXERCÍCIO DO DIA"
- * -----------------------------------------------------------------------------
- * Todo exercício é uma lista de FASES. Cada fase tem um texto (a instrução),
- * uma duração e um tamanho para a bolinha (escala): maior = inspirar/tensionar,
- * menor = soltar. Para criar um exercício novo, basta acrescentar um item em
- * EXERCICIOS (a ordem define o rodízio da semana).
- * ========================================================================== */
-
 type Fase = { texto: string; segundos: number; escala: number; dica?: string };
 
 export type Exercicio = {
   id: string;
-  nome: string;        // usado ao salvar
-  titulo: string;      // pergunta/convite do cartão
+  nome: string;
+  titulo: string;
   descricao: string;
   icone: IconeNome;
-  ciclos: number;      // quantas vezes as fases se repetem no modo "ativo"
+  ciclos: number;
   fases: Fase[];
 };
 
@@ -174,13 +162,8 @@ export const EXERCICIOS: ReadonlyArray<Exercicio> = [
   },
 ];
 
-/**
- * Segunda a sexta seguem a ordem de EXERCICIOS (respiração, ombros, 5-4-3-2-1,
- * relaxamento, meditação); sábado e domingo recomeçam o rodízio.
- * `deslocamento` permite trocar a sugestão pelo botão "Outra sugestão".
- */
 function exercicioDoDia(deslocamento: number, hoje: Date = new Date()): Exercicio {
-  const diaSemanaSegunda0 = (hoje.getDay() + 6) % 7; // segunda = 0 … domingo = 6
+  const diaSemanaSegunda0 = (hoje.getDay() + 6) % 7;
   return EXERCICIOS[(diaSemanaSegunda0 + deslocamento) % EXERCICIOS.length];
 }
 
@@ -189,14 +172,6 @@ function duracaoTexto(ex: Exercicio): string {
   const min = Math.max(1, Math.round(total / 60));
   return `${min} ${min === 1 ? 'minuto' : 'minutos'}`;
 }
-
-/* =============================================================================
- * 3. MOTOR DA ANIMAÇÃO
- * -----------------------------------------------------------------------------
- *   previa    → repete as fases sem parar (o convite que aparece ao abrir a tela)
- *   ativo     → faz `ciclos` repetições e chama aoConcluir()
- *   concluido → bolinha volta ao tamanho normal
- * ========================================================================== */
 
 type Modo = 'previa' | 'ativo' | 'concluido';
 
@@ -245,7 +220,6 @@ function useMotorExercicio(ex: Exercicio, modo: Modo, aoConcluir: () => void) {
   return { escala, faseIdx: pos.fase, ciclo: pos.ciclo };
 }
 
-/* ---------- Botão de texto centralizado (ações secundárias) ---------- */
 function BotaoLink({ texto, icone, onPress }: { texto: string; icone: IconeNome; onPress: () => void }) {
   return (
     <Pressable style={local.botaoLink} onPress={onPress} accessibilityRole="button" accessibilityLabel={texto}>
@@ -255,13 +229,9 @@ function BotaoLink({ texto, icone, onPress }: { texto: string; icone: IconeNome;
   );
 }
 
-/* =============================================================================
- * 4. CARTÃO "EXERCÍCIO DO MOMENTO"
- * ========================================================================== */
-
 export function ExercicioDoMomento({ exercicio, onTrocar, rotuloTag = 'Exercício do momento' }: {
   exercicio: Exercicio;
-  onTrocar?: () => void;   // sem isto, o botão "Outra sugestão" não aparece
+  onTrocar?: () => void;
   rotuloTag?: string;
 }) {
   const [modo, setModo] = useState<Modo>('previa');
@@ -302,7 +272,6 @@ export function ExercicioDoMomento({ exercicio, onTrocar, rotuloTag = 'Exercíci
       <Text style={local.tituloExercicio} accessibilityRole="header">{exercicio.titulo}</Text>
       <Text style={local.descricaoExercicio}>{exercicio.descricao}</Text>
 
-      {/* Palco da animação: a bolinha cresce e diminui conforme a fase. */}
       <View style={local.palco} accessible accessibilityLabel={`${rotulo} ${subtexto}`}>
         <Animated.View style={[local.anelExterno, { transform: [{ scale: escala }] }]}>
           <Animated.View style={[local.anelInterno, { transform: [{ scale: escalaInterna }] }]}>
@@ -353,13 +322,6 @@ export function ExercicioDoMomento({ exercicio, onTrocar, rotuloTag = 'Exercíci
     </View>
   );
 }
-
-/* =============================================================================
- * 5. CATEGORIAS
- * -----------------------------------------------------------------------------
- * Cada categoria abre a sua própria página, dentro de src/app/principal:
- * exercicios.tsx, bem-estar.tsx, questionarios.tsx e metas.tsx.
- * ========================================================================== */
 
 const ROTAS_CATEGORIAS = {
   exercicios: '/principal/exercicios',
@@ -438,14 +400,6 @@ function Categorias() {
   );
 }
 
-/* =============================================================================
- * 6. FAIXA DO TOPO, TELA E PÁGINA
- * ========================================================================== */
-
-/**
- * Faixa fixa no topo (mesmo fundo e linha azul do menu inferior):
- * lua + "Evolua" à esquerda; configurações, notificações e sair à direita.
- */
 function FaixaTopo() {
   const insets = useSafeAreaInsets();
   const { desktop, estreito, larguraMax } = useLayoutInfo();
@@ -454,9 +408,14 @@ function FaixaTopo() {
   const tamIcone = estreito ? 24 : 26;
 
   return (
-<View style={[local.faixaTitulo, { paddingTop: insets.top + FAIXA_ESPACO_CIMA }]}>
+    <View style={[local.faixaTitulo, { paddingTop: insets.top + FAIXA_ESPACO_CIMA }]}>
       <View style={[local.faixaInterna, { maxWidth: larguraMax, paddingHorizontal: desktop ? 32 : 14 }]}>
         <View style={local.faixaMarca} accessibilityRole="header">
+          <Ionicons
+            name="moon"
+            size={desktop ? 34 : estreito ? 26 : 30}
+            color={cores.azulEvolua}
+          />
           <Text
             style={[local.tituloPagina, { fontSize: desktop ? 36 : estreito ? 26 : 32 }]}
             numberOfLines={1}
@@ -489,139 +448,18 @@ function FaixaTopo() {
   );
 }
 
-/* =============================================================================
- * FASES DA LUA (decoração, sem clique)
- * -----------------------------------------------------------------------------
- * 7 luas: crescente, quarto crescente, gibosa crescente, CHEIA no centro e depois
- * o lado minguante espelhado. `tamanho` é a medida de cada lua no celular.
- * ========================================================================== */
-
-type FaseDaLua = {
-  crescente: boolean; // true = lado iluminado à direita (lua crescendo)
-  gibosa: boolean;    // true = mais da metade iluminada
-  rx: number;         // largura da sombra: 0 = quarto, perto de 1 = bem fina ou quase cheia
-  cheia?: boolean;
-  tamanho: number;
-};
-
-const FASES_DA_LUA: ReadonlyArray<FaseDaLua> = [
-  { crescente: true, gibosa: false, rx: 0.62, tamanho: 26 },
-  { crescente: true, gibosa: false, rx: 0, tamanho: 32 },
-  { crescente: true, gibosa: true, rx: 0.55, tamanho: 38 },
-  { crescente: true, gibosa: true, rx: 0, cheia: true, tamanho: 50 },
-  { crescente: false, gibosa: true, rx: 0.55, tamanho: 38 },
-  { crescente: false, gibosa: false, rx: 0, tamanho: 32 },
-  { crescente: false, gibosa: false, rx: 0.62, tamanho: 26 },
-];
-
-function IconeFaseLua({ fase, escala, indice, brilho }: {
-  fase: FaseDaLua; escala: number; indice: number; brilho: Animated.Value;
-}) {
-  const raio = 48;
-  const rx = raio * fase.rx;
-  const lado = fase.crescente ? 1 : 0;
-  const sentidoSombra = fase.gibosa === fase.crescente ? 1 : 0;
-  const sombra = rx < 0.5 ? 'L 50 2' : `A ${rx} ${raio} 0 0 ${sentidoSombra} 50 2`;
-  const formaClara = fase.cheia
-    ? 'M 50 2 A 48 48 0 0 1 50 98 A 48 48 0 0 1 50 2 Z'
-    : `M 50 2 A ${raio} ${raio} 0 0 ${lado} 50 98 ${sombra} Z`;
-
-  const tam = fase.tamanho * escala;
-  const tamHalo = tam * 2;
-  const sobra = (tamHalo - tam) / 2;
-
-  return (
-    <View style={{ width: tam, height: tam }}>
-      {/* Brilho amarelado em volta da lua (pulsa devagar) */}
-      <Animated.View
-        pointerEvents="none"
-        style={{
-          position: 'absolute', left: -sobra, top: -sobra,
-          opacity: brilho.interpolate({ inputRange: [0, 1], outputRange: fase.cheia ? [0.7, 1] : [0.45, 0.85] }),
-        }}
-      >
-        <Svg width={tamHalo} height={tamHalo} viewBox="0 0 100 100">
-          <Defs>
-            <RadialGradient id={`halo${indice}`} cx="50%" cy="50%" r="50%">
-              <Stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />
-              <Stop offset="0.3" stopColor="#b8c3dc" stopOpacity="0.8" />
-              <Stop offset="0.6" stopColor="#c5dee8" stopOpacity="0.3" />
-              <Stop offset="1" stopColor="#cacfd8" stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
-          <Circle cx={50} cy={50} r={50} fill={`url(#halo${indice})`} />
-        </Svg>
-      </Animated.View>
-
-      {/* A lua: lado sem luz + parte iluminada (branco quente) com crateras suaves */}
-      <Svg width={tam} height={tam} viewBox="0 0 100 100">
-        <Defs>
-          <RadialGradient id={`lua${indice}`} cx="38%" cy="35%" r="75%">
-            <Stop offset="0" stopColor="#ffffff" />
-            <Stop offset="0.6" stopColor="#f6f6f6" />
-            <Stop offset="1" stopColor="#ffffff" />
-          </RadialGradient>
-          <ClipPath id={`forma${indice}`}>
-            <Path d={formaClara} />
-          </ClipPath>
-        </Defs>
-        <Circle cx={50} cy={50} r={raio} fill="#d8eeffb6" stroke="#B5C6E6" strokeWidth={1.5} />
-        <G clipPath={`url(#forma${indice})`}>
-          <Circle cx={50} cy={50} r={raio} fill={`url(#lua${indice})`} />
-          <Circle cx={38} cy={36} r={7} fill="#ffffff" opacity={0.5} />
-          <Circle cx={62} cy={58} r={9} fill="#ffffff" opacity={0.5} />
-          <Circle cx={45} cy={74} r={5} fill="#fefefe" opacity={0.5} />
-          <Circle cx={66} cy={30} r={4} fill="#ffffff" opacity={0.5} />
-        </G>
-      </Svg>
-    </View>
-  );
-}
-
-function FasesDaLua() {
-  const { estreito } = useLayoutInfo();
-  const brilho = useRef(new Animated.Value(0)).current;
-
-  // Brilho que sobe e desce devagar.
-  useEffect(() => {
-    const nativo = Platform.OS !== 'web';
-    const animacao = Animated.loop(
-      Animated.sequence([
-        Animated.timing(brilho, { toValue: 1, duration: 2400, easing: Easing.inOut(Easing.sin), useNativeDriver: nativo }),
-        Animated.timing(brilho, { toValue: 0, duration: 2400, easing: Easing.inOut(Easing.sin), useNativeDriver: nativo }),
-      ]),
-    );
-    animacao.start();
-    return () => animacao.stop();
-  }, [brilho]);
-
-  return (
-    <View
-      style={local.fasesLua}
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-    >
-      {FASES_DA_LUA.map((f, i) => (
-        <IconeFaseLua key={i} fase={f} escala={estreito ? 0.85 : 1} indice={i} brilho={brilho} />
-      ))}
-    </View>
-  );
-}
-
 function TelaEvolua() {
   const { desktop } = useLayoutInfo();
   const [deslocamento, setDeslocamento] = useState(0);
   const exercicio = useMemo(() => exercicioDoDia(deslocamento), [deslocamento]);
 
   const cartaoExercicio = (
-    // key: ao trocar de exercício, o cartão recomeça do zero.
     <ExercicioDoMomento key={exercicio.id} exercicio={exercicio} onTrocar={() => setDeslocamento((d) => d + 1)} />
   );
 
   return (
     <>
-      <FasesDaLua />
-      <Text style={[estilos.frase, desktop && { fontSize: 17, lineHeight: 18 }]}>
+      <Text style={[estilos.frase, { fontStyle: 'italic' }, desktop && { fontSize: 17, lineHeight: 18 }]}>
         Pequenos passos também são evolução.
         Escolha como deseja cuidar de si hoje.
       </Text>
@@ -653,18 +491,15 @@ export default function Evolua() {
   const [tela, setTela] = useState<TelaAtual>('evolua');
   const scrollRef = useRef<ScrollView>(null);
 
-  // Esconde a barra padrão das Tabs: só vale o <MenuInferior /> (um único menu).
   useEffect(() => {
     (navigation as any)?.setOptions?.({ tabBarStyle: { display: 'none' }, headerShown: false });
   }, [navigation]);
 
-  // Configurações e Notificações abrem aqui dentro; "voltar" retorna ao Evolua.
   const irTela = useCallback((t: TelaInterna) => {
     setTela(t === 'home' ? 'evolua' : t);
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, []);
 
-  // Botão "voltar" do Android: de Configurações/Notificações volta ao Evolua.
   useEffect(() => {
     if (tela === 'evolua') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { irTela('home'); return true; });
@@ -682,7 +517,6 @@ export default function Evolua() {
           style={StyleSheet.absoluteFill}
         />
 
-        {/* A faixa fica fixa no topo e ocupa a largura toda; só aparece na tela principal do Evolua. */}
         {noEvolua && <FaixaTopo />}
 
         <ScrollView
@@ -709,21 +543,19 @@ export default function Evolua() {
   );
 }
 
-/* ---------- Estilos só desta tela (o resto vem de `estilos`) ---------- */
+const AZUL_MENU = '#397FB5';
 const TAMANHO_ANEL = 160;
 const TAMANHO_MIOLO = 96;
-/* Ajuste estes números para subir/descer a faixa e a frase (em pixels). */
-const FAIXA_ESPACO_CIMA = 24;   // espaço acima da lua e dos ícones (aumente para descer a faixa)
-const FAIXA_ESPACO_BAIXO = 26;  // espaço abaixo deles (aumente para a faixa ficar mais alta)
-const ESPACO_APOS_FAIXA = 30;   // distância entre a faixa e a frase "Pequenos passos…"
+const FAIXA_ESPACO_CIMA = 24;
+const FAIXA_ESPACO_BAIXO = 26;
+const ESPACO_APOS_FAIXA = 30;
 
 const local = StyleSheet.create({
-  /* Faixa do topo: mesmas cores do menu inferior */
   faixaTitulo: {
     width: '100%',
     backgroundColor: 'rgba(205, 229, 247, 0.68)',
-    borderBottomWidth: 3,
-    borderBottomColor: '#397FB5',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(160, 194, 220, 0.45)',
     paddingBottom: FAIXA_ESPACO_BAIXO,
   },
   faixaInterna: {
@@ -734,15 +566,12 @@ const local = StyleSheet.create({
     justifyContent: 'space-between',
   },
   faixaMarca: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
-  tituloPagina: { fontFamily: fontes.titulo, color: cores.azulMarinho },
-    fasesLua: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  tituloPagina: { fontFamily: fontes.titulo, color: cores.azulEvolua },
   topoCartao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   tag: { backgroundColor: cores.verdeSuave, borderRadius: 12, paddingVertical: 4, paddingHorizontal: 10 },
   tagTexto: { fontFamily: fontes.textoMedio, fontSize: 12, color: cores.azulMarinho },
   tituloExercicio: { fontFamily: fontes.titulo, fontSize: 20, lineHeight: 26, color: cores.azulMarinho, marginBottom: 6 },
   descricaoExercicio: { fontFamily: fontes.texto, fontSize: 14, lineHeight: 20, color: cores.cinzaGrafite },
-
-  /* Animação: o palco é maior que a bolinha para a escala máxima não ser cortada. */
   palco: { height: TAMANHO_ANEL * 1.45, alignItems: 'center', justifyContent: 'center', marginVertical: 4 },
   anelExterno: {
     width: TAMANHO_ANEL, height: TAMANHO_ANEL, borderRadius: TAMANHO_ANEL / 2,
@@ -761,8 +590,6 @@ const local = StyleSheet.create({
   pilulaTexto: { fontFamily: fontes.texto, fontSize: 12, color: cores.cinzaGrafite },
   botaoLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 14, marginTop: 4 },
   botaoLinkTexto: { fontFamily: fontes.botao, fontSize: 15, color: cores.azulProfundo },
-
-  /* Categorias */
   gradeCategorias: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 18 },
   categoria: {
     width: '48.5%', minHeight: 150, borderRadius: 18, padding: 16, gap: 6,

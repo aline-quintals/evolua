@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -16,9 +15,29 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { cores, fontes } from '../../tema';
+import { fontes } from '../../tema';
 import { MenuInferior, useLayoutInfo } from './compartilhado';
 import { salvarExercicioConcluido } from './evolua';
+
+/* =========================================================
+   CORES (azul como tom principal + tons de apoio)
+========================================================= */
+
+const AZUL = {
+  principal: '#3A7FB8',
+  escuro: '#2C5F8A',
+  claro: '#E3EFF9',
+  apresentacao: '#E6F1FA',
+  suave: '#EAF2F8',
+  trilha: '#E3ECF3',
+};
+
+const C = {
+  titulo: '#29465F',
+  texto: '#536B80',
+  suave: '#74879A',
+  borda: '#E7EDF3',
+};
 
 type Fase = {
   texto: string;
@@ -514,7 +533,7 @@ function ExecucaoExercicio({
         </View>
 
         <Pressable onPress={aoFechar} style={styles.fecharExecucao}>
-          <Ionicons name="close" size={23} color={cores.azulMarinho} />
+          <Ionicons name="close" size={23} color={C.titulo} />
         </Pressable>
       </View>
 
@@ -558,7 +577,7 @@ function ExecucaoExercicio({
             </Pressable>
 
             <Pressable style={styles.botaoReiniciar} onPress={reiniciar}>
-              <Ionicons name="refresh-outline" size={20} color={cores.azulProfundo} />
+              <Ionicons name="refresh-outline" size={20} color={AZUL.escuro} />
             </Pressable>
           </View>
         </>
@@ -576,7 +595,7 @@ function ExecucaoExercicio({
 
           {!salvo ? (
             <Pressable
-              style={[styles.botaoPrincipal, { backgroundColor: cor }]}
+              style={[styles.botaoPrincipal, { backgroundColor: cor, flex: 0, alignSelf: 'stretch' }]}
               onPress={salvar}
             >
               <Ionicons name="bookmark-outline" size={19} color="#FFFFFF" />
@@ -590,7 +609,7 @@ function ExecucaoExercicio({
           )}
 
           <Pressable style={styles.botaoRefazer} onPress={reiniciar}>
-            <Ionicons name="refresh-outline" size={18} color={cores.azulProfundo} />
+            <Ionicons name="refresh-outline" size={18} color={AZUL.escuro} />
             <Text style={styles.botaoRefazerTexto}>Fazer novamente</Text>
           </Pressable>
         </View>
@@ -602,7 +621,7 @@ function ExecucaoExercicio({
 export default function Exercicios() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { desktop, larguraMax } = useLayoutInfo();
+  const { larguraMax } = useLayoutInfo();
 
   const [categoriaAberta, setCategoriaAberta] = useState<string | null>(null);
   const [exercicioSelecionado, setExercicioSelecionado] = useState<{
@@ -617,9 +636,9 @@ export default function Exercicios() {
     });
   }, [navigation]);
 
-const voltar = () => {
-  router.replace('/principal/evolua');
-};
+  const voltar = () => {
+    router.replace('/principal/evolua');
+  };
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -643,60 +662,59 @@ const voltar = () => {
   return (
     <View style={styles.raiz}>
       <LinearGradient
-        colors={['#FFFFFF', '#F7F9FC', '#EEF2F6']}
+        colors={['#FFFFFF', '#F7FAFD', '#EBF2F8']}
         locations={[0, 0.58, 1]}
         style={StyleSheet.absoluteFill}
       />
 
+      <View style={{ paddingTop: insets.top + 8 }}>
+        <View style={[styles.topo, { maxWidth: larguraMax, alignSelf: 'center' }]}>
+          <Pressable
+            onPress={exercicioSelecionado ? () => setExercicioSelecionado(null) : voltar}
+            style={styles.botaoVoltar}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+          >
+            <Ionicons name="arrow-back" size={24} color={C.titulo} />
+          </Pressable>
+
+          <View style={styles.topoTitulo}>
+            <Text style={styles.tituloPagina}>Exercícios</Text>
+            <Text style={styles.subtituloPagina}>Um momento para cuidar de você</Text>
+          </View>
+
+          <View style={styles.iconeTopo}>
+            <Ionicons name="fitness-outline" size={25} color={AZUL.principal} />
+          </View>
+        </View>
+      </View>
+
       <ScrollView
-        style={{ flex: 1 }}
         contentContainerStyle={[
           styles.conteudo,
-          {
-            maxWidth: larguraMax,
-            paddingHorizontal: desktop ? 32 : 16,
-            paddingTop: insets.top + 12,
-            paddingBottom: 30,
-          },
+          { maxWidth: larguraMax, alignSelf: 'center', paddingBottom: 28 },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.cabecalho}>
-          <Pressable
-            onPress={voltar}
-            style={styles.botaoVoltar}
-            accessibilityRole="button"
-            accessibilityLabel="Voltar para Evolua"
-          >
-            <Ionicons name="arrow-back" size={23} color={cores.azulMarinho} />
-          </Pressable>
-
-          <View style={styles.cabecalhoTexto}>
-            <Text style={styles.tituloPagina}>Exercícios</Text>
-            <Text style={styles.subtituloPagina}>Um momento para cuidar de você.</Text>
-          </View>
-        </View>
-
-        <View style={styles.introducao}>
-          <View style={styles.introducaoIcone}>
-            <Ionicons name="heart-outline" size={27} color="#397FB5" />
+        <View style={styles.apresentacao}>
+          <View style={styles.apresentacaoIcone}>
+            <Ionicons name="heart-outline" size={27} color={AZUL.principal} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.introducaoTitulo}>Seu momento de cuidado</Text>
-            <Text style={styles.introducaoTexto}>
-              Escolha uma atividade e siga as orientações no seu ritmo.
-              Você não precisa fazer tudo de uma vez.
+            <Text style={styles.apresentacaoTitulo}>Seu momento de cuidado</Text>
+            <Text style={styles.apresentacaoTexto}>
+              Escolha uma atividade e siga as orientações no seu ritmo. Você não precisa fazer tudo de uma vez.
             </Text>
           </View>
         </View>
 
         <View style={styles.resumo}>
-          <View>
+          <View style={styles.resumoItem}>
             <Text style={styles.resumoNumero}>{totalExercicios}</Text>
-            <Text style={styles.resumoLegenda}>atividades disponíveis</Text>
+            <Text style={styles.resumoLegenda}>atividades</Text>
           </View>
-          <View style={styles.resumoSeparador} />
-          <View>
+          <View style={styles.resumoDivisor} />
+          <View style={styles.resumoItem}>
             <Text style={styles.resumoNumero}>{CATEGORIAS.length}</Text>
             <Text style={styles.resumoLegenda}>categorias</Text>
           </View>
@@ -711,24 +729,18 @@ const voltar = () => {
           />
         )}
 
-        <View style={styles.secaoTopo}>
-          <Text style={styles.tituloSecao}>Explore as atividades</Text>
-          <Text style={styles.textoSecao}>
-            Toque em uma categoria para conhecer os exercícios.
-          </Text>
-        </View>
+        <Text style={styles.tituloSecao}>Explore as atividades</Text>
+        <Text style={styles.descricaoSecao}>
+          Toque em uma categoria para conhecer os exercícios.
+        </Text>
 
         {CATEGORIAS.map((categoria) => {
           const aberta = categoriaAberta === categoria.id;
 
           return (
-            <View key={categoria.id} style={styles.categoriaContainer}>
+            <View key={categoria.id} style={styles.categoriaBloco}>
               <Pressable
-                style={[
-                  styles.categoriaCabecalho,
-                  { backgroundColor: categoria.cor },
-                  aberta && styles.categoriaAberta,
-                ]}
+                style={styles.categoriaCabecalho}
                 onPress={() => {
                   setCategoriaAberta(aberta ? null : categoria.id);
                   setExercicioSelecionado(null);
@@ -736,78 +748,58 @@ const voltar = () => {
                 accessibilityRole="button"
                 accessibilityState={{ expanded: aberta }}
               >
-                <View style={styles.categoriaIcone}>
-                  <Ionicons
-                    name={categoria.icone}
-                    size={25}
-                    color={categoria.corTexto}
-                  />
+                <View style={[styles.categoriaIcone, { backgroundColor: categoria.cor }]}>
+                  <Ionicons name={categoria.icone} size={25} color={categoria.corTexto} />
                 </View>
 
-                <View style={styles.categoriaTexto}>
-                  <Text style={[styles.categoriaTitulo, { color: categoria.corTexto }]}>
-                    {categoria.titulo}
-                  </Text>
-                  <Text style={styles.categoriaDescricao}>
-                    {categoria.descricao}
-                  </Text>
-                  <Text style={[styles.categoriaQuantidade, { color: categoria.corTexto }]}>
+                <View style={styles.categoriaInfo}>
+                  <Text style={styles.categoriaTitulo}>{categoria.titulo}</Text>
+                  <Text style={styles.categoriaDescricao}>{categoria.descricao}</Text>
+                  <Text style={[styles.categoriaContagem, { color: categoria.corTexto }]}>
                     {categoria.exercicios.length} atividades
                   </Text>
                 </View>
 
                 <Ionicons
                   name={aberta ? 'chevron-up' : 'chevron-down'}
-                  size={23}
-                  color={categoria.corTexto}
+                  size={22}
+                  color="#718096"
                 />
               </Pressable>
 
               {aberta && (
                 <View style={styles.listaExercicios}>
                   {categoria.exercicios.map((exercicio, indice) => {
-                    const selecionado =
-                      exercicioSelecionado?.exercicio.id === exercicio.id;
+                    const selecionado = exercicioSelecionado?.exercicio.id === exercicio.id;
 
                     return (
                       <Pressable
                         key={exercicio.id}
                         style={[
-                          styles.itemExercicio,
-                          selecionado && styles.itemExercicioSelecionado,
+                          styles.itemLinha,
+                          indice !== categoria.exercicios.length - 1 && styles.itemBorda,
                         ]}
-                        onPress={() => {
+                        onPress={() =>
                           setExercicioSelecionado({
                             exercicio,
                             cor: categoria.corTexto,
-                          });
-                        }}
+                          })
+                        }
                       >
-                        <View
-                          style={[
-                            styles.itemIcone,
-                            { backgroundColor: categoria.cor + '90' },
-                          ]}
-                        >
-                          <Ionicons
-                            name={exercicio.icone}
-                            size={22}
-                            color={categoria.corTexto}
-                          />
+                        <View style={[styles.itemIcone, { backgroundColor: categoria.cor }]}>
+                          <Ionicons name={exercicio.icone} size={22} color={categoria.corTexto} />
                         </View>
 
-                        <View style={styles.itemTexto}>
-                          <Text style={styles.itemTitulo}>{exercicio.nome}</Text>
-                          <Text style={styles.itemDescricao}>
-                            {exercicio.descricao}
-                          </Text>
+                        <View style={styles.itemInfo}>
+                          <Text style={styles.itemNome}>{exercicio.nome}</Text>
+                          <Text style={styles.itemDescricao}>{exercicio.descricao}</Text>
                         </View>
 
-                        <Ionicons
-                          name={selecionado ? 'checkmark-circle' : 'chevron-forward'}
-                          size={21}
-                          color={categoria.corTexto}
-                        />
+                        {selecionado ? (
+                          <Ionicons name="checkmark-circle" size={23} color="#5A9A76" />
+                        ) : (
+                          <Ionicons name="arrow-forward-circle-outline" size={24} color="#7A8FA3" />
+                        )}
                       </Pressable>
                     );
                   })}
@@ -820,9 +812,7 @@ const voltar = () => {
         <View style={styles.aviso}>
           <Ionicons name="information-circle-outline" size={20} color="#65819B" />
           <Text style={styles.avisoTexto}>
-            Faça os movimentos sem forçar. Se sentir dor, tontura ou desconforto,
-            interrompa a atividade. Estes exercícios são práticas de apoio e não
-            substituem acompanhamento profissional.
+            Faça os movimentos sem forçar. Se sentir dor, tontura ou desconforto, interrompa a atividade. Estes exercícios são práticas de apoio e não substituem acompanhamento profissional.
           </Text>
         </View>
       </ScrollView>
@@ -835,51 +825,63 @@ const voltar = () => {
 const styles = StyleSheet.create({
   raiz: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: '#F7FAFD',
   },
-  conteudo: {
+  topo: {
     width: '100%',
-    alignSelf: 'center',
-    paddingBottom: 30,
-  },
-  cabecalho: {
+    minHeight: 66,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 22,
-    gap: 13,
+    gap: 12,
   },
   botaoVoltar: {
-    width: 43,
-    height: 43,
-    borderRadius: 15,
-    backgroundColor: '#E9F1F8',
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#EAF1F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cabecalhoTexto: {
+  topoTitulo: {
     flex: 1,
   },
   tituloPagina: {
     fontFamily: fontes.titulo,
-    fontSize: 28,
-    color: cores.azulMarinho,
+    fontSize: 25,
+    color: C.titulo,
   },
   subtituloPagina: {
     fontFamily: fontes.texto,
-    fontSize: 13,
-    color: cores.cinzaGrafite,
+    fontSize: 11,
+    color: C.suave,
     marginTop: 2,
   },
-  introducao: {
+  iconeTopo: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: AZUL.claro,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  conteudo: {
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 14,
+  },
+
+  /* apresentação e resumo */
+  apresentacao: {
+    backgroundColor: AZUL.apresentacao,
+    borderRadius: 20,
+    padding: 17,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
-    backgroundColor: '#E8F2FA',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 15,
   },
-  introducaoIcone: {
+  apresentacaoIcone: {
     width: 48,
     height: 48,
     borderRadius: 16,
@@ -887,154 +889,170 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  introducaoTitulo: {
-    fontFamily: fontes.titulo,
+  apresentacaoTitulo: {
+    fontFamily: fontes.textoMedio,
     fontSize: 16,
-    color: cores.azulMarinho,
+    color: AZUL.escuro,
     marginBottom: 4,
   },
-  introducaoTexto: {
+  apresentacaoTexto: {
     fontFamily: fontes.texto,
     fontSize: 12,
     lineHeight: 18,
-    color: cores.cinzaGrafite,
+    color: '#55708A',
   },
   resumo: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 17,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 15,
-    marginBottom: 28,
     borderWidth: 1,
-    borderColor: '#E9EEF3',
+    borderColor: '#E8EDF2',
+  },
+  resumoItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
   },
   resumoNumero: {
     fontFamily: fontes.titulo,
-    fontSize: 22,
-    color: cores.azulProfundo,
-    textAlign: 'center',
+    fontSize: 21,
+    color: AZUL.principal,
   },
   resumoLegenda: {
     fontFamily: fontes.texto,
     fontSize: 11,
-    color: cores.cinzaGrafite,
-    marginTop: 2,
+    color: '#7A8FA3',
   },
-  resumoSeparador: {
+  resumoDivisor: {
     width: 1,
-    height: 34,
-    backgroundColor: '#E2E8EF',
-  },
-  secaoTopo: {
-    marginBottom: 14,
+    height: 32,
+    backgroundColor: '#E7ECF1',
   },
   tituloSecao: {
-    fontFamily: fontes.titulo,
-    fontSize: 21,
-    color: cores.azulMarinho,
+    fontFamily: fontes.textoMedio,
+    fontSize: 17,
+    color: C.titulo,
+    marginTop: 5,
   },
-  textoSecao: {
+  descricaoSecao: {
     fontFamily: fontes.texto,
-    fontSize: 13,
-    color: cores.cinzaGrafite,
-    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#7A8FA3',
+    marginTop: -9,
   },
-  categoriaContainer: {
-    marginBottom: 12,
+
+  /* categorias */
+  categoriaBloco: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: C.borda,
+    overflow: 'hidden',
   },
   categoriaCabecalho: {
+    minHeight: 91,
+    paddingHorizontal: 13,
+    paddingVertical: 13,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    borderRadius: 17,
     gap: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(85, 125, 155, 0.10)',
-  },
-  categoriaAberta: {
-    borderBottomLeftRadius: 7,
-    borderBottomRightRadius: 7,
   },
   categoriaIcone: {
-    width: 45,
-    height: 45,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFFA8',
+    width: 49,
+    height: 49,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoriaTexto: {
+  categoriaInfo: {
     flex: 1,
+    gap: 3,
   },
   categoriaTitulo: {
-    fontFamily: fontes.titulo,
-    fontSize: 16,
-    lineHeight: 21,
+    fontFamily: fontes.textoMedio,
+    fontSize: 14,
+    color: '#354F65',
   },
   categoriaDescricao: {
     fontFamily: fontes.texto,
     fontSize: 11,
-    lineHeight: 16,
-    color: '#586675',
-    marginTop: 3,
+    color: '#7A8FA3',
   },
-  categoriaQuantidade: {
+  categoriaContagem: {
     fontFamily: fontes.textoMedio,
-    fontSize: 11,
-    marginTop: 5,
+    fontSize: 10,
+    marginTop: 2,
   },
   listaExercicios: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    borderWidth: 1,
-    borderTopWidth: 0,
-    borderColor: '#E8EDF2',
+    paddingHorizontal: 13,
+    paddingBottom: 4,
+    backgroundColor: '#FCFDFE',
   },
-  itemExercicio: {
+  itemLinha: {
+    minHeight: 78,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
     gap: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF1F5',
+    paddingVertical: 12,
   },
-  itemExercicioSelecionado: {
-    backgroundColor: '#F2F7FB',
+  itemBorda: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#EDF1F5',
   },
   itemIcone: {
-    width: 40,
-    height: 40,
+    width: 39,
+    height: 39,
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemTexto: {
+  itemInfo: {
     flex: 1,
+    gap: 3,
   },
-  itemTitulo: {
+  itemNome: {
     fontFamily: fontes.textoMedio,
-    fontSize: 13,
-    color: cores.azulMarinho,
+    fontSize: 12,
+    color: '#354F65',
   },
   itemDescricao: {
     fontFamily: fontes.texto,
-    fontSize: 11,
-    lineHeight: 16,
-    color: cores.cinzaGrafite,
-    marginTop: 3,
+    fontSize: 10,
+    color: '#7A8FA3',
+    lineHeight: 15,
   },
+  aviso: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: AZUL.suave,
+    borderRadius: 15,
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  avisoTexto: {
+    flex: 1,
+    fontFamily: fontes.texto,
+    fontSize: 11,
+    lineHeight: 17,
+    color: '#586B7D',
+  },
+
+  /* execução do exercício */
   execucao: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 17,
-    marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#DFEAF2',
+    borderColor: C.borda,
+    padding: 17,
+    gap: 4,
   },
   execucaoTopo: {
     flexDirection: 'row',
@@ -1045,8 +1063,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
     borderRadius: 20,
   },
   tagDuracaoTexto: {
@@ -1054,8 +1072,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   fecharExecucao: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1063,16 +1081,16 @@ const styles = StyleSheet.create({
   },
   tituloExecucao: {
     fontFamily: fontes.titulo,
-    fontSize: 21,
-    color: cores.azulMarinho,
+    fontSize: 23,
+    color: C.titulo,
     marginTop: 12,
   },
   descricaoExecucao: {
     fontFamily: fontes.texto,
-    fontSize: 12,
-    lineHeight: 18,
-    color: cores.cinzaGrafite,
-    marginTop: 5,
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#71869A',
+    marginTop: 4,
   },
   visualBase: {
     minHeight: 210,
@@ -1098,7 +1116,7 @@ const styles = StyleSheet.create({
   visualLegenda: {
     fontFamily: fontes.textoMedio,
     fontSize: 14,
-    color: cores.azulMarinho,
+    color: C.titulo,
     marginTop: 13,
     textAlign: 'center',
   },
@@ -1137,7 +1155,7 @@ const styles = StyleSheet.create({
     width: '75%',
     height: 8,
     borderRadius: 10,
-    backgroundColor: '#E9EEF3',
+    backgroundColor: AZUL.trilha,
     overflow: 'hidden',
     marginTop: 13,
   },
@@ -1148,7 +1166,7 @@ const styles = StyleSheet.create({
   textoPequeno: {
     fontFamily: fontes.texto,
     fontSize: 10,
-    color: cores.cinzaGrafite,
+    color: '#74869A',
     marginTop: 6,
   },
   visualPaisagem: {
@@ -1182,7 +1200,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '12deg' }],
   },
   instrucaoCaixa: {
-    backgroundColor: '#F5F8FB',
+    backgroundColor: '#F5F8FA',
     borderRadius: 16,
     padding: 15,
     alignItems: 'center',
@@ -1196,27 +1214,27 @@ const styles = StyleSheet.create({
     fontFamily: fontes.texto,
     fontSize: 12,
     lineHeight: 18,
-    color: cores.cinzaGrafite,
+    color: '#71869A',
     textAlign: 'center',
     marginTop: 5,
   },
   contadorTempo: {
     fontFamily: fontes.titulo,
     fontSize: 27,
-    color: cores.azulMarinho,
+    color: C.titulo,
     marginTop: 10,
   },
   cicloTexto: {
     fontFamily: fontes.texto,
     fontSize: 11,
-    color: cores.cinzaGrafite,
+    color: '#74869A',
     marginTop: 2,
   },
   botoesExecucao: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginTop: 16,
+    marginTop: 12,
   },
   botaoPrincipal: {
     minHeight: 48,
@@ -1229,8 +1247,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   botaoPrincipalTexto: {
-    fontFamily: fontes.botao,
-    fontSize: 14,
+    fontFamily: fontes.textoMedio,
+    fontSize: 13,
     color: '#FFFFFF',
   },
   botaoReiniciar: {
@@ -1243,7 +1261,7 @@ const styles = StyleSheet.create({
   },
   conclusao: {
     alignItems: 'center',
-    paddingVertical: 25,
+    paddingVertical: 20,
   },
   iconeConclusao: {
     width: 95,
@@ -1255,14 +1273,14 @@ const styles = StyleSheet.create({
   tituloConclusao: {
     fontFamily: fontes.titulo,
     fontSize: 23,
-    color: cores.azulMarinho,
+    color: C.titulo,
     marginTop: 15,
   },
   textoConclusao: {
     fontFamily: fontes.texto,
     fontSize: 13,
     lineHeight: 20,
-    color: cores.cinzaGrafite,
+    color: '#71869A',
     textAlign: 'center',
     marginTop: 7,
     marginBottom: 20,
@@ -1289,24 +1307,7 @@ const styles = StyleSheet.create({
   },
   botaoRefazerTexto: {
     fontFamily: fontes.textoMedio,
-    fontSize: 13,
-    color: cores.azulProfundo,
-  },
-  aviso: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    padding: 13,
-    backgroundColor: '#EDF3F8',
-    borderRadius: 14,
-    marginTop: 15,
-  },
-  avisoTexto: {
-    flex: 1,
-    fontFamily: fontes.texto,
-    fontSize: 11,
-    lineHeight: 17,
-    color: '#586B7D',
+    fontSize: 12,
+    color: '#71869A',
   },
 });
-
