@@ -59,6 +59,9 @@ export interface PerfilUsuario {
 
 export type EmocaoChave = 'muito_feliz' | 'feliz' | 'neutro' | 'triste' | 'muito_triste';
 
+/** Qualidade do sono informada no check-in. */
+export type QualidadeSono = 'ruim' | 'medio' | 'bom' | 'otimo';
+
 /** Registro de um check-in emocional (ver o guia na seção 4). */
 export interface RegistroCheckin {
   id: string;
@@ -67,10 +70,14 @@ export interface RegistroCheckin {
   dataLocal: string;    // dia no fuso do usuário "AAAA-MM-DD" (agrupar por dia)
   emocao: EmocaoChave;
   emocaoNivel: 1 | 2 | 3 | 4 | 5; // 5 = muito feliz ... 1 = muito triste
-  ansiedade: number;    // 1 a 10
-  estresse: number;     // 1 a 10
-  energia: number;      // 1 a 10
+  ansiedade: number;    // 0 a 10
+  estresse: number;     // 0 a 10
+  energia: number;      // 0 a 10
+  sono: QualidadeSono;  // qualidade do sono
 }
+
+/** Dados que a pessoa preenche no check-in (o resto o app gera). */
+export type DadosCheckin = Pick<RegistroCheckin, 'emocao' | 'ansiedade' | 'estresse' | 'energia' | 'sono'>;
 
 export type StatusNotificacao = 'nao_lida' | 'lida' | 'arquivada';
 
@@ -129,7 +136,7 @@ export const SOMBRA: ViewStyle = (Platform.select({
   },
 }) ?? {}) as ViewStyle;
 
-/** Emoções do check-in. ORDEM: índice 0 = muito feliz (esquerda, lado "+") … 4 = muito triste. */
+/** Emoções do check-in. ORDEM: índice 0 = muito feliz (esquerda) … 4 = muito triste. */
 export const EMOCOES: ReadonlyArray<{
   chave: EmocaoChave;
   rotulo: string;
@@ -142,6 +149,14 @@ export const EMOCOES: ReadonlyArray<{
   { chave: 'neutro', rotulo: 'Neutro', nivel: 3, cor: cores.neutro, corPastel: cores.neutroPastel },
   { chave: 'triste', rotulo: 'Triste', nivel: 2, cor: cores.triste, corPastel: cores.tristePastel },
   { chave: 'muito_triste', rotulo: 'Muito triste', nivel: 1, cor: cores.muitoTriste, corPastel: cores.muitoTristePastel },
+];
+
+/** Opções de qualidade do sono do check-in. */
+export const QUALIDADES_SONO: ReadonlyArray<{ valor: QualidadeSono; rotulo: string }> = [
+  { valor: 'ruim', rotulo: 'Ruim' },
+  { valor: 'medio', rotulo: 'Médio' },
+  { valor: 'bom', rotulo: 'Bom' },
+  { valor: 'otimo', rotulo: 'Ótimo' },
 ];
 
 export const FRASES_MOTIVACIONAIS: ReadonlyArray<string> = [
@@ -312,7 +327,7 @@ export function definirStatusNotificacao(id: string, status: StatusNotificacao):
   ouvintesNotificacoes.forEach((l) => l(notificacoes));
 }
 
-/** Registra um ouvinte chamado a cada check-in salvo. Retorna a função para cancelar. */
+/** Registra um ouvinte chamado a cada check-in salvo ou refeito. Retorna a função para cancelar. */
 export function aoSalvarCheckin(l: (r: RegistroCheckin) => void): () => void {
   ouvintesCheckin.add(l);
   return () => { ouvintesCheckin.delete(l); };
@@ -330,18 +345,21 @@ export function aoMudarNotificacoes(l: (n: Notificacao[]) => void): () => void {
  * ===========================================================================
  * >>> SALVAR CHECK-IN EMOCIONAL — GUIA PARA QUEM FAZ O HISTÓRICO <<<
  *
- * ESTA FUNÇÃO (salvarCheckin) É A PARTE DO CÓDIGO QUE SALVA O CHECK-IN.
+ * salvarCheckin() É A PARTE DO CÓDIGO QUE SALVA O CHECK-IN.
  * Ela é chamada pelo botão "Salvar o meu dia" da Home. Quem estiver
  * programando a página de histórico deve USAR ESTE PONTO para linkar o
  * check-in salvo e fazê-lo aparecer no histórico.
  *
  * Como os dados são organizados:
- *   Cada clique gera UM RegistroCheckin, inserido no início de estado.checkins.
- *   Nada é sobrescrito; vários registros no mesmo dia são permitidos.
+ *   Cada check-in gera UM RegistroCheckin, inserido no início de estado.checkins.
+ *   Na Home existe UM check-in por dia: se a pessoa clicar em "Refazer meu dia",
+ *   atualizarCheckin() TROCA os dados do registro de hoje (mesmo id, mesma data)
+ *   em vez de criar outro. Os dois caminhos avisam os ouvintes (aoSalvarCheckin).
  *
  * O que é armazenado em cada registro:
  *   id, usuarioId, criadoEmISO, dataLocal, emocao, emocaoNivel (1–5),
- *   ansiedade (0–10), estresse (0–10), energia (0–10).
+ *   ansiedade (0–10), estresse (0–10), energia (0–10), sono
+ *   ('ruim' | 'medio' | 'bom' | 'otimo').
  *
  * Como identificar registro e data:
  *   - `id` é único por registro (use como key da lista).
@@ -349,25 +367,34 @@ export function aoMudarNotificacoes(l: (n: Notificacao[]) => void): () => void {
  *     do usuário, use para agrupar/filtrar por dia.
  *
  * Como recuperar os registros na página de histórico:
- *     import { useCheckins } from './home';            // ajuste o caminho
+ *     import { useCheckins } from './compartilhado';   // ajuste o caminho
  *     const registros = useCheckins({ de: '2025-03-01', ate: '2025-03-31' });
  *   ou, sem filtro, useEvolua((e) => e.checkins).
  * ===========================================================================
  */
-export function salvarCheckin(dados: Pick<RegistroCheckin, 'emocao' | 'ansiedade' | 'estresse' | 'energia'>): RegistroCheckin {
+const nivelDaEmocao = (c: EmocaoChave): 1 | 2 | 3 | 4 | 5 => EMOCOES.find((e) => e.chave === c)?.nivel ?? 3;
+
+export function salvarCheckin(dados: DadosCheckin): RegistroCheckin {
   const agora = new Date();
   const registro: RegistroCheckin = {
     id: gerarId('checkin'),
     usuarioId: estadoAtual.perfil.id,
     criadoEmISO: agora.toISOString(),
     dataLocal: dataLocalISO(agora),
-    emocao: dados.emocao,
-    emocaoNivel: EMOCOES.find((e) => e.chave === dados.emocao)?.nivel ?? 3,
-    ansiedade: dados.ansiedade,
-    estresse: dados.estresse,
-    energia: dados.energia,
+    ...dados,
+    emocaoNivel: nivelDaEmocao(dados.emocao),
   };
   definirEstado({ ...estadoAtual, checkins: [registro, ...estadoAtual.checkins] });
+  ouvintesCheckin.forEach((l) => l(registro));
+  return registro;
+}
+
+/** Troca os dados de um check-in já salvo (mantém id e data). Usado em "Refazer meu dia". */
+export function atualizarCheckin(id: string, dados: DadosCheckin): RegistroCheckin | null {
+  const antigo = estadoAtual.checkins.find((r) => r.id === id);
+  if (!antigo) return null;
+  const registro: RegistroCheckin = { ...antigo, ...dados, emocaoNivel: nivelDaEmocao(dados.emocao) };
+  definirEstado({ ...estadoAtual, checkins: estadoAtual.checkins.map((r) => (r.id === id ? registro : r)) });
   ouvintesCheckin.forEach((l) => l(registro));
   return registro;
 }
@@ -756,8 +783,7 @@ export function MenuInferior({ ativo = null, aoPressionarHome }: { ativo?: ItemM
  * -----------------------------------------------------------------------------
  * Controle arrastável com N posições fixas. A bolinha NUNCA para entre dois
  * pontos: ela sempre encaixa no centro de um dos N segmentos iguais.
- *   - Emoção: N = 5 (cada segmento fica sob um rosto).
- *   - Ansiedade / Estresse / Energia: N = 10 (valores 1 a 10).
+ *   - Ansiedade / Estresse / Energia: N = 11 (valores 0 a 10).
  * `indice` vai de 0 a N-1; null = ainda não escolhido (bolinha opaca no meio).
  * Funciona com toque (iOS/Android) e mouse (web).
  * ========================================================================== */
@@ -884,77 +910,122 @@ export function RostoEmocao({ chave, cor, tamanho }: { chave: EmocaoChave; cor: 
   );
 }
 
-/** Bloco de um controle numérico (Ansiedade, Estresse ou Energia), valores de 0 a 10 em 11 pontos fixos. */
-export function EscalaNumerica({ rotulo, valor, onChange, gradiente }: {
-  rotulo: string; valor: number | null; onChange: (v: number) => void; gradiente: readonly [string, string, ...string[]];
+/**
+ * Controle numérico (Ansiedade, Estresse ou Energia): valores de 0 a 10 em 11 pontos fixos.
+ * A trilha é cinza e só é pintada (com UMA cor) até a bolinha; no 0 fica toda cinza.
+ */
+export function EscalaNumerica({ rotulo, valor, onChange, cor }: {
+  rotulo: string; valor: number; onChange: (v: number) => void; cor: string;
 }) {
+  const preenchido = valor <= 0 ? 0 : ((valor + 0.5) / 11) * 100;
   return (
     <View style={estilos.escalaNum}>
       <View style={estilos.escalaNumLinha}>
         <Text style={estilos.escalaNumRotulo}>{rotulo}</Text>
-        <Text style={estilos.escalaNumValor} accessibilityLiveRegion="polite">{valor ?? '-'} /10</Text>
+        <Text style={estilos.escalaNumValor} accessibilityLiveRegion="polite">{valor} /10</Text>
       </View>
       <DeslizadorDiscreto
         quantidade={11}
         indice={valor}
         onChange={onChange}
         rotulo={rotulo}
-        textoValor={(i) => (i === null ? 'Não escolhido' : `${i} de 10`)}
+        textoValor={(i) => `${i ?? 0} de 10`}
         trilha={
-          <LinearGradient colors={gradiente} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={estilos.trilhaNumerica} />
+          <View style={estilos.trilhaNumerica}>
+            <View style={{ height: '100%', width: `${preenchido}%`, backgroundColor: cor, borderRadius: 6 }} />
+          </View>
         }
       />
     </View>
   );
 }
 
-/** Cartão "Como está se sentindo hoje?". */
+/** Cartão "Como está se sentindo hoje?". Depois de salvo, mostra um resumo com "Refazer meu dia". */
 export function CheckinEmocional() {
-  const [larguraCartao, setLarguraCartao] = useState(0);
-  const [indiceEmocao, setIndiceEmocao] = useState<number | null>(null);
-  const [ansiedade, setAnsiedade] = useState<number | null>(null);
-  const [estresse, setEstresse] = useState<number | null>(null);
-  const [energia, setEnergia] = useState<number | null>(null);
-  const [aviso, setAviso] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
+  const hoje = dataLocalISO(new Date());
+  const checkinHoje = useEvolua((e) => e.checkins.find((c) => c.dataLocal === hoje));
 
-  // Tamanho do rostinho conforme a largura REAL do cartão (5 células iguais entre os sinais "+" e "–").
-  const espacoCelula = larguraCartao ? (larguraCartao - PADDING_CARTAO * 2 - 52) / 5 : 56;
+  const [larguraCartao, setLarguraCartao] = useState(0);
+  const [editando, setEditando] = useState(false);
+  const [indiceEmocao, setIndiceEmocao] = useState<number | null>(null);
+  const [ansiedade, setAnsiedade] = useState(0);
+  const [estresse, setEstresse] = useState(0);
+  const [energia, setEnergia] = useState(0);
+  const [sono, setSono] = useState<QualidadeSono | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  // Tamanho do rostinho conforme a largura REAL do cartão (5 células iguais).
+  const espacoCelula = larguraCartao ? (larguraCartao - PADDING_CARTAO * 2) / 5 : 56;
   const rosto = Math.floor(Math.min(58, Math.max(34, espacoCelula - 10)));
   const anel = rosto + 10;
+
+  const limpar = () => {
+    setIndiceEmocao(null); setAnsiedade(0); setEstresse(0); setEnergia(0); setSono(null); setAviso(null);
+  };
+
+  /** Reabre o formulário já preenchido com o que foi salvo hoje. */
+  const refazer = () => {
+    if (!checkinHoje) return;
+    setIndiceEmocao(EMOCOES.findIndex((e) => e.chave === checkinHoje.emocao));
+    setAnsiedade(checkinHoje.ansiedade);
+    setEstresse(checkinHoje.estresse);
+    setEnergia(checkinHoje.energia);
+    setSono(checkinHoje.sono);
+    setAviso(null);
+    setEditando(true);
+  };
 
   const salvar = () => {
     const faltando: string[] = [];
     if (indiceEmocao === null) faltando.push('a emoção');
-    if (ansiedade === null) faltando.push('a ansiedade');
-    if (estresse === null) faltando.push('o estresse');
-    if (energia === null) faltando.push('a energia');
+    if (sono === null) faltando.push('a qualidade do sono');
     if (faltando.length > 0) {
-      setAviso({ tipo: 'erro', texto: `Para salvar, escolha ${faltando.join(', ')}.` });
+      setAviso(`Para salvar, escolha ${faltando.join(' e ')}.`);
       return;
     }
-    /* >>> AQUI O CHECK-IN É SALVO. <<<
-     * salvarCheckin() (seção 4) guarda o registro em estado.checkins.
-     * QUEM ESTIVER PROGRAMANDO O HISTÓRICO deve usar este ponto/estes dados
-     * (useCheckins) para listar o check-in salvo na página de histórico. */
-    const registro = salvarCheckin({
+    /* >>> AQUI O CHECK-IN É SALVO (ou trocado, se a pessoa clicou em "Refazer meu dia"). <<<
+     * salvarCheckin() / atualizarCheckin() (seção 4) guardam o registro em estado.checkins.
+     * QUEM ESTIVER PROGRAMANDO O HISTÓRICO deve usar estes dados (useCheckins). */
+    const dados: DadosCheckin = {
       emocao: EMOCOES[indiceEmocao as number].chave,
-      ansiedade: ansiedade as number,
-      estresse: estresse as number,
-      energia: energia as number,
-    });
-    setAviso({
-      tipo: 'ok',
-      texto: `Dia salvo em ${new Date(registro.criadoEmISO).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.`,
-    });
-    setIndiceEmocao(null); setAnsiedade(null); setEstresse(null); setEnergia(null);
+      ansiedade,
+      estresse,
+      energia,
+      sono: sono as QualidadeSono,
+    };
+    if (checkinHoje && editando) atualizarCheckin(checkinHoje.id, dados);
+    else salvarCheckin(dados);
+    setEditando(false);
+    limpar();
   };
 
+  /* ---- Já salvo hoje: as opções somem e aparece o resumo ---- */
+  if (checkinHoje && !editando) {
+    const emo = EMOCOES.find((e) => e.chave === checkinHoje.emocao) ?? EMOCOES[2];
+    const sonoRotulo = QUALIDADES_SONO.find((s) => s.valor === checkinHoje.sono)?.rotulo ?? '';
+    return (
+      <View style={estilos.cartao}>
+        <Text style={estilos.secaoTitulo} accessibilityRole="header">Seu dia está salvo</Text>
+        <View style={estilos.resumoLinha}>
+          <RostoEmocao chave={emo.chave} cor={emo.cor} tamanho={52} />
+          <Text style={estilos.resumoTexto}>{emo.rotulo}</Text>
+        </View>
+        <Text style={estilos.painelTexto}>
+          Ansiedade {checkinHoje.ansiedade}/10 · Estresse {checkinHoje.estresse}/10 · Energia {checkinHoje.energia}/10
+        </Text>
+        <Text style={estilos.painelTexto}>Sono: {sonoRotulo}</Text>
+        <BotaoSecundario texto="Refazer meu dia" onPress={refazer} />
+      </View>
+    );
+  }
+
+  /* ---- Formulário ---- */
   return (
     <View style={estilos.cartao} onLayout={(e) => setLarguraCartao(e.nativeEvent.layout.width)}>
       <Text style={estilos.secaoTitulo} accessibilityRole="header">Como está se sentindo hoje?</Text>
 
-      {/* Rostos: 5 células iguais; o centro de cada uma fica alinhado ao segmento colorido da barra abaixo. */}
-      <View style={estilos.emocoesLinha} accessibilityRole="radiogroup">
+      {/* Rostos: a emoção é escolhida só ao tocar no rosto (sem barra embaixo). */}
+      <View style={[estilos.emocoesLinha, { marginHorizontal: 0, marginBottom: 8 }]} accessibilityRole="radiogroup">
         {EMOCOES.map((e, i) => {
           const selecionada = indiceEmocao === i;
           return (
@@ -978,50 +1049,39 @@ export function CheckinEmocional() {
         })}
       </View>
 
-      {/* Barra de emoção: cada segmento tem a MESMA cor do rosto acima dele. */}
-      <View style={estilos.emocaoBarraLinha}>
-        <Text style={[estilos.sinal, { color: cores.roxoVibrante }]}>+</Text>
-        <View style={{ flex: 1 }}>
-          <DeslizadorDiscreto
-            quantidade={5}
-            indice={indiceEmocao}
-            onChange={setIndiceEmocao}
-            rotulo="Indicador de emoção"
-            textoValor={(i) => (i === null ? 'Nenhuma emoção selecionada' : EMOCOES[i].rotulo)}
-            trilha={
-              <View style={estilos.faixaEmocao}>
-                {EMOCOES.map((e) => (<View key={e.chave} style={{ flex: 1, backgroundColor: e.corPastel }} />))}
-              </View>
-            }
-          />
+      <EscalaNumerica rotulo="Ansiedade" valor={ansiedade} onChange={setAnsiedade} cor={cores.muitoTristePastel} />
+      <EscalaNumerica rotulo="Estresse" valor={estresse} onChange={setEstresse} cor={cores.tristePastel} />
+      <EscalaNumerica rotulo="Energia" valor={energia} onChange={setEnergia} cor={cores.felizPastel} />
+
+      {/* Qualidade do sono */}
+      <View style={estilos.escalaNum}>
+        <Text style={[estilos.escalaNumRotulo, { marginBottom: 8, paddingHorizontal: 4 }]}>Como foi seu sono?</Text>
+        <View style={estilos.chips} accessibilityRole="radiogroup">
+          {QUALIDADES_SONO.map((s) => {
+            const ativo = sono === s.valor;
+            return (
+              <Pressable
+                key={s.valor}
+                style={[estilos.chip, ativo && estilos.chipAtivo]}
+                onPress={() => setSono(s.valor)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: ativo }}
+                accessibilityLabel={`Sono ${s.rotulo}`}
+              >
+                <Text style={[estilos.chipTexto, ativo && { color: cores.branco }]}>{s.rotulo}</Text>
+              </Pressable>
+            );
+          })}
         </View>
-        <Text style={[estilos.sinal, { color: cores.turquesa }]}>–</Text>
       </View>
 
-      <EscalaNumerica
-        rotulo="Ansiedade"
-        valor={ansiedade}
-        onChange={setAnsiedade}
-        gradiente={[cores.lavanda, cores.lilas, cores.azulCeu]}
-      />
-
-      <EscalaNumerica
-        rotulo="Estresse"
-        valor={estresse}
-        onChange={setEstresse}
-        gradiente={[cores.rosaPastel, cores.pessego, cores.laranjaSuave]}
-      />
-
-      <EscalaNumerica
-        rotulo="Energia"
-        valor={energia}
-        onChange={setEnergia}
-        gradiente={[cores.verdeSuave, cores.verdeMenta, cores.amareloPastel]}
-      />
       <BotaoSalvarDia onPress={salvar} />
+      {editando && (
+        <BotaoSecundario texto="Cancelar" onPress={() => { setEditando(false); limpar(); }} />
+      )}
       {aviso && (
-        <Text style={[estilos.aviso, aviso.tipo === 'ok' ? estilos.avisoOk : estilos.avisoErro]} accessibilityLiveRegion="polite">
-          {aviso.texto}
+        <Text style={[estilos.aviso, estilos.avisoErro]} accessibilityLiveRegion="polite">
+          {aviso}
         </Text>
       )}
     </View>
@@ -1253,7 +1313,6 @@ export const estilos = StyleSheet.create({
   /* Cartões e textos gerais */
   cartao: { backgroundColor: cores.branco, borderRadius: 22, padding: PADDING_CARTAO, marginBottom: 18, ...SOMBRA },
   cartaoPerigo: { borderWidth: 1, borderColor: '#FFC9D6' },
-  saudacao: { fontFamily: fontes.titulo, color: cores.azulMarinho },
   frase: { fontFamily: fontes.texto, fontSize: 15, lineHeight: 21, color: cores.cinzaGrafite, marginTop: 4, marginBottom: 16 },
   secaoTitulo: { fontFamily: fontes.titulo, fontSize: 20, color: cores.azulMarinho, marginBottom: 12 },
   aviso: { fontFamily: fontes.textoMedio, fontSize: 14, lineHeight: 20, padding: 12, borderRadius: 12, marginTop: 14, overflow: 'hidden', color: cores.azulMarinho },
@@ -1283,20 +1342,19 @@ export const estilos = StyleSheet.create({
   emocaoCelula: { flex: 1, alignItems: 'center', paddingVertical: 6 },
   emocaoAnel: { alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
   emocaoAnelAtivo: { borderColor: cores.azulEvolua, backgroundColor: cores.branco },
-  emocaoBarraLinha: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  sinal: { width: 26, fontSize: 24, fontFamily: fontes.titulo, textAlign: 'center' },
-  faixaEmocao: { flexDirection: 'row', height: 12, width: '100%', borderRadius: 6, overflow: 'hidden' },
   deslizador: { height: 46, justifyContent: 'center', width: '100%' },
   deslizadorInterno: { height: TAMANHO_BOLINHA, justifyContent: 'center' },
   bolinha: {
     position: 'absolute', left: 0, top: 0, width: TAMANHO_BOLINHA, height: TAMANHO_BOLINHA, borderRadius: TAMANHO_BOLINHA / 2,
     backgroundColor: cores.branco, borderWidth: 4, borderColor: cores.azulEvolua, ...SOMBRA,
   },
-  trilhaNumerica: { height: 12, width: '100%', borderRadius: 6 },
+  trilhaNumerica: { height: 12, width: '100%', borderRadius: 6, backgroundColor: cores.cinzaClaro, overflow: 'hidden' },
   escalaNum: { marginTop: 8 },
   escalaNumLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 4 },
   escalaNumRotulo: { fontFamily: fontes.textoMedio, fontSize: 17, color: cores.azulMarinho },
   escalaNumValor: { fontFamily: fontes.texto, fontSize: 15, color: cores.cinzaGrafite },
+  resumoLinha: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+  resumoTexto: { fontFamily: fontes.titulo, fontSize: 20, color: cores.azulMarinho },
 
   /* Botões */
   btnPrimarioBase: { alignSelf: 'center', width: '82%', maxWidth: 340, marginTop: 18, marginBottom: 6, borderRadius: 16, overflow: 'hidden', ...SOMBRA },
