@@ -29,6 +29,7 @@ import {
   useLayoutInfo,
   useNavegacao,
   useTecladoVisivel,
+  NOTICIA_DESTAQUE,
 } from './compartilhado';
 import TelaConfiguracoes from './configuracoes';
 import TelaNotificacoes from './notificacoes';
@@ -199,14 +200,7 @@ const CONTEUDOS: ReadonlyArray<Conteudo> = [
     meta: 'Notícia · CNN Brasil',
     link: 'https://www.cnnbrasil.com.br/saude/psiquiatra-explica-diferenca-entre-depressao-e-ansiedade/',
   },
-  {
-    id: 'n4',
-    tipo: 'noticia',
-    tema: 'prevencao',
-    titulo: '“Eu não fumo, só uso vape”: nicotina e saúde mental dos adolescentes',
-    meta: 'Notícia · O Tempo · ago/2026',
-    link: 'https://www.otempo.com.br/saude-e-bem-estar/2026/8/2/eu-nao-fumo-so-uso-vape-consumo-de-nicotina-alerta-para-a-saude-mental-dos-adolescentes',
-  },
+  NOTICIA_DESTAQUE,
 
   // ---------- MATERIAIS (PDF) ----------
   {

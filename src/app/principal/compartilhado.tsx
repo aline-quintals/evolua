@@ -37,6 +37,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { cores, fontes } from '../../tema';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import VisualizadorConteudo from '../../componentes/VisualizadorConteudo';
 
 
 /* =============================================================================
@@ -153,6 +154,16 @@ export interface EstadoEvolua {
 export type TelaInterna = 'home' | 'configuracoes' | 'notificacoes';
 
 export type IconeNome = React.ComponentProps<typeof Ionicons>['name'];
+
+/** Notícia de destaque compartilhada entre a Home e a tela Saiba+. */
+export const NOTICIA_DESTAQUE = {
+  id: 'n4',
+  tipo: 'noticia' as const,
+  tema: 'prevencao',
+  titulo: '“Eu não fumo, só uso vape”: nicotina e saúde mental dos adolescentes',
+  meta: 'Notícia · O Tempo · ago/2026',
+  link: 'https://www.otempo.com.br/saude-e-bem-estar/2026/8/2/eu-nao-fumo-so-uso-vape-consumo-de-nicotina-alerta-para-a-saude-mental-dos-adolescentes',
+};
 
 /* =============================================================================
  * 3. TEMA, LAYOUT RESPONSIVO E EMOÇÕES
@@ -1479,6 +1490,7 @@ export function TelaHome() {
   const biografia = useEvolua((e) => e.perfil.biografia);
   const { desktop } = useLayoutInfo();
   const frase = useMemo(() => fraseDoDia(), []);
+  const [noticiaAberta, setNoticiaAberta] = useState<typeof NOTICIA_DESTAQUE | null>(null);
 
   const cartaoSaudacao = (
     <View style={estilos.homeIntro}>
@@ -1487,6 +1499,7 @@ export function TelaHome() {
         <View style={estilos.avatarCabecalho}>
           <Avatar tamanho={desktop ? 68 : 60} />
         </View>
+
 
         <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start' }}>
           <Text style={estilos.tituloSaudacao}>Olá, {apelido}!</Text>
@@ -1507,9 +1520,11 @@ export function TelaHome() {
         </View>
       </View>
 
+
       <Text style={[estilos.frase, desktop && { fontSize: 17, lineHeight: 24 }]}>
         {frase}
       </Text>
+
 
       <Text style={estilos.secaoTitulo}>Suas atividades:</Text>
 
@@ -1517,24 +1532,57 @@ export function TelaHome() {
     </View>
   );
 
+
+  const cartaoNoticia = (
+    <Pressable
+      style={estilos.cartaoNoticia}
+      onPress={() => setNoticiaAberta(NOTICIA_DESTAQUE)}
+      accessibilityRole="button"
+      accessibilityLabel={`Notícia em destaque. ${NOTICIA_DESTAQUE.titulo}`}
+    >
+      <View style={estilos.noticiaCabecalho}>
+        <View style={estilos.noticiaIcone}>
+          <Ionicons name="newspaper-outline" size={22} color="#628A57" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={estilos.noticiaEtiqueta}>INFORMAÇÃO QUE IMPORTA</Text>
+          <Text style={estilos.noticiaTitulo}>{NOTICIA_DESTAQUE.titulo}</Text>
+          <Text style={estilos.noticiaMeta}>{NOTICIA_DESTAQUE.meta}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#628A57" />
+      </View>
+    </Pressable>
+  );
+
+
   return (
     <>
       {/* Cabeçalho com configurações, notificações e sair, sem o título Home */}
       <Cabecalho titulo="" />
 
       {desktop ? (
-        <View style={estilos.duasColunas}>
-          <View style={{ flex: 1 }}>{cartaoSaudacao}</View>
-          <View style={{ flex: 1.1 }}>
-            <CheckinEmocional />
+        <>
+          <View style={estilos.duasColunas}>
+            <View style={{ flex: 1 }}>{cartaoSaudacao}</View>
+            <View style={{ flex: 1.1 }}>
+              <CheckinEmocional />
+            </View>
           </View>
-        </View>
+          {cartaoNoticia}
+        </>
       ) : (
         <>
           {cartaoSaudacao}
           <CheckinEmocional />
+          {cartaoNoticia}
         </>
       )}
+
+
+      <VisualizadorConteudo
+        conteudo={noticiaAberta}
+        aoFechar={() => setNoticiaAberta(null)}
+      />
     </>
   );
 }
@@ -1573,6 +1621,12 @@ export const estilos = StyleSheet.create({
 
   /* Atividades (Home) */
   homeIntro: { backgroundColor: 'transparent', borderRadius: 0, padding: 0, marginBottom: 18 },
+  cartaoNoticia: { backgroundColor: cores.branco, borderRadius: 20, padding: 16, marginTop: 4, marginBottom: 18, borderWidth: 1, borderColor: 'rgba(98, 138, 87, 0.18)', ...SOMBRA },
+  noticiaCabecalho: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  noticiaIcone: { width: 46, height: 46, borderRadius: 14, backgroundColor: '#E8F1E5', alignItems: 'center', justifyContent: 'center' },
+  noticiaEtiqueta: { fontFamily: fontes.textoMedio, fontSize: 10, letterSpacing: 1, color: '#628A57', marginBottom: 5 },
+  noticiaTitulo: { fontFamily: fontes.titulo, fontSize: 16, lineHeight: 22, color: cores.azulMarinho },
+  noticiaMeta: { fontFamily: fontes.texto, fontSize: 12, color: cores.cinzaGrafite, marginTop: 6 },
   atividade: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 12, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(85, 125, 155, 0.10)' },
   atividadeTexto: { flex: 1, fontFamily: fontes.textoMedio, color: '#334155' },
   atividadeIconeBox: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#EAF4FB', alignItems: 'center', justifyContent: 'center' },
