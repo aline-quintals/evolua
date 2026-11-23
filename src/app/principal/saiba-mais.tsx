@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cores, fontes } from '../../tema';
+import VisualizadorConteudo from '../../componentes/VisualizadorConteudo';
 
 import {
   IconeNome,
@@ -111,38 +112,130 @@ const TEMAS: ReadonlyArray<Tema> = [
 ];
 
 const CONTEUDOS: ReadonlyArray<Conteudo> = [
+  // ---------- VÍDEOS ----------
   {
-    id: 'c1',
+    id: 'v1',
     tipo: 'video',
     tema: 'dependencia',
-    titulo: '[Título do vídeo]',
-    meta: 'Vídeo · [Fonte] · [X] min',
+    titulo: 'Como enfrentar a dependência do álcool e outras drogas',
+    meta: 'Vídeo · Conversa com psiquiatra e infectologista',
+    link: 'https://www.youtube.com/watch?v=m0H13zFFjT4',
   },
   {
-    id: 'c2',
+    id: 'v2',
+    tipo: 'video',
+    tema: 'dependencia',
+    titulo: 'Como identificar a dependência de álcool',
+    meta: 'Vídeo · Dr. Ajuda · curto',
+    link: 'https://www.youtube.com/shorts/EuXZ0gIGXa8',
+  },
+  {
+    id: 'v3',
+    tipo: 'video',
+    tema: 'saude',
+    titulo: 'Saúde com Ciência: álcool, drogas e internações',
+    meta: 'Vídeo · Saúde com Ciência',
+    link: 'https://www.youtube.com/watch?v=WQ1ruxdDC7Q',
+  },
+
+  // ---------- PALESTRAS ----------
+  {
+    id: 'p1',
+    tipo: 'palestra',
+    tema: 'dependencia',
+    titulo: 'Alcoolismo: intoxicação aguda, uso abusivo e dependência',
+    meta: 'Palestra · Aula sobre os prejuízos da dependência',
+    link: 'https://www.youtube.com/watch?v=ANzDOqsY_6U',
+  },
+  {
+    id: 'p2',
     tipo: 'palestra',
     tema: 'ansiedade',
-    titulo: '[Título da palestra]',
-    meta: 'Palestra · [Palestrante] · [X] min',
+    titulo: 'A tristeza transforma, a depressão paralisa',
+    meta: 'Palestra · Canal Leda Nagle · 43 min',
+    link: 'https://www.youtube.com/watch?v=Lp2YV36w98s',
+  },
+
+  // ---------- DOCUMENTÁRIOS ----------
+  {
+    id: 'd1',
+    tipo: 'documentario',
+    tema: 'dependencia',
+    titulo: 'As Fronteiras do Álcool',
+    meta: 'Documentário · Produção de Carolina Sanchez',
+    link: 'https://www.youtube.com/watch?v=9p60DQSl378',
   },
   {
-    id: 'c3',
+    id: 'd2',
+    tipo: 'documentario',
+    tema: 'dependencia',
+    titulo: 'Drogas, uma ferida aberta na alma',
+    meta: 'Documentário · A dependência pelo olhar do dependente',
+    link: 'https://www.youtube.com/watch?v=Mb7m_M3HjcI',
+  },
+
+  // ---------- NOTÍCIAS ----------
+  {
+    id: 'n1',
+    tipo: 'noticia',
+    tema: 'dependencia',
+    titulo: 'Dependência química é doença e tem tratamento',
+    meta: 'Notícia · Agência Gov · fev/2024',
+    link: 'https://agenciagov.ebc.com.br/noticias/202402/dependencia-quimica-e-doenca-e-tem-tratamento',
+  },
+  {
+    id: 'n2',
+    tipo: 'noticia',
+    tema: 'dependencia',
+    titulo: 'Veja onde buscar ajuda contra o alcoolismo',
+    meta: 'Notícia · Gazeta SP · atendimento pelo SUS',
+    link: 'https://www.gazetasp.com.br/brasil/veja-onde-buscar-ajuda-contra-o-alcoolismo/',
+  },
+  {
+    id: 'n3',
+    tipo: 'noticia',
+    tema: 'ansiedade',
+    titulo: 'Psiquiatra explica diferença entre depressão e ansiedade',
+    meta: 'Notícia · CNN Brasil',
+    link: 'https://www.cnnbrasil.com.br/saude/psiquiatra-explica-diferenca-entre-depressao-e-ansiedade/',
+  },
+  {
+    id: 'n4',
+    tipo: 'noticia',
+    tema: 'prevencao',
+    titulo: '“Eu não fumo, só uso vape”: nicotina e saúde mental dos adolescentes',
+    meta: 'Notícia · O Tempo · ago/2026',
+    link: 'https://www.otempo.com.br/saude-e-bem-estar/2026/8/2/eu-nao-fumo-so-uso-vape-consumo-de-nicotina-alerta-para-a-saude-mental-dos-adolescentes',
+  },
+
+  // ---------- MATERIAIS (PDF) ----------
+  {
+    id: 'm1',
+    tipo: 'material',
+    tema: 'dependencia',
+    titulo: 'Alcoolismo: guia completo do CFM',
+    meta: 'Material · PDF · Conselho Federal de Medicina',
+    link: 'https://www.ufrgs.br/famed/wp-content/uploads/2024/12/CFM-Alcoolismo.pdf',
+  },
+  {
+    id: 'm2',
+    tipo: 'material',
+    tema: 'prevencao',
+    titulo: 'Cartilha: 12 práticas para proteger crianças e adolescentes do uso de drogas',
+    meta: 'Material · PDF · Ministério da Cidadania (Senapred)',
+    link: 'https://www.medicina.ufmg.br/sismid/wp-content/uploads/sites/107/2024/05/cartilha_12-praticas-de-como-pais-e-responsaveis-podem-no-dia-a-dia-proteger-o-futuro-das-criancas-e-adolescentes-relacao-uso-drogas.pdf',
+  },
+  {
+    id: 'm3',
     tipo: 'material',
     tema: 'saude',
-    titulo: '[Título da cartilha]',
-    meta: 'Material · PDF · [Fonte]',
+    titulo: 'Dependência química: álcool (UNA-SUS)',
+    meta: 'Material · PDF · Universidade Aberta do SUS / UFMA',
+    link: 'https://core.ac.uk/download/48119667.pdf',
   },
 ];
 
 const TELEFONE_CVV = '188';
-
-function abrirConteudo(c: Conteudo) {
-  if (c.link) {
-    Linking.openURL(c.link).catch(() => avisar('Ops', 'Não foi possível abrir este conteúdo.'));
-  } else {
-    avisar('Em breve', 'Este conteúdo ainda não foi conectado.');
-  }
-}
 
 function ligarCVV() {
   Linking.openURL(`tel:${TELEFONE_CVV}`).catch(() =>
@@ -242,12 +335,12 @@ function CartaoTema({ tema, selecionado, aoPressionar }: { tema: Tema; seleciona
   );
 }
 
-function CartaoConteudo({ c }: { c: Conteudo }) {
+function CartaoConteudo({ c, aoAbrir }: { c: Conteudo; aoAbrir: (c: Conteudo) => void }) {
   const t = TIPOS[c.tipo];
   return (
     <Pressable
       style={local.conteudoCartao}
-      onPress={() => abrirConteudo(c)}
+      onPress={() => aoAbrir(c)}
       accessibilityRole="button"
       accessibilityLabel={`${c.titulo}. ${c.meta}`}
     >
@@ -267,6 +360,12 @@ function TelaSaibaMais() {
   const { desktop } = useLayoutInfo();
   const [filtro, setFiltro] = useState<FiltroTipo>('todos');
   const [temaId, setTemaId] = useState<string | null>(null);
+  const [aberto, setAberto] = useState<Conteudo | null>(null);
+
+  const abrir = (c: Conteudo) => {
+    if (c.link) setAberto(c);
+    else avisar('Em breve', 'Este conteúdo ainda não foi conectado.');
+  };
 
   const temaAtual = TEMAS.find((t) => t.id === temaId) ?? null;
 
@@ -320,7 +419,7 @@ function TelaSaibaMais() {
       ) : (
         <View style={{ gap: 10 }}>
           {lista.map((c) => (
-            <CartaoConteudo key={c.id} c={c} />
+            <CartaoConteudo key={c.id} c={c} aoAbrir={abrir} />
           ))}
         </View>
       )}
@@ -348,6 +447,8 @@ function TelaSaibaMais() {
       )}
 
       <Text style={local.rodape}>Aplicativo criado por NubyTech · 2026</Text>
+
+      <VisualizadorConteudo conteudo={aberto} aoFechar={() => setAberto(null)} />
     </>
   );
 }
