@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   Pressable,
@@ -14,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cores, fontes } from '../../tema';
-import { MenuInferior, useLayoutInfo } from './compartilhado';
+import { MenuInferior, registrarAtividadeBemEstar, useLayoutInfo } from './compartilhado';
 
 type Atividade = {
   id: string;
@@ -361,6 +360,16 @@ function BemEstar() {
 
   const concluirAtividade = () => {
     if (!atividadeSelecionada) return;
+
+    const categoriaDaAtividade = CATEGORIAS.find((c) =>
+      c.atividades.some((a) => a.id === atividadeSelecionada.id),
+    );
+
+    registrarAtividadeBemEstar({
+      atividadeId: atividadeSelecionada.id,
+      nome: atividadeSelecionada.nome,
+      categoria: categoriaDaAtividade?.titulo,
+    });
 
     setConcluidas((atual) =>
       atual.includes(atividadeSelecionada.id)

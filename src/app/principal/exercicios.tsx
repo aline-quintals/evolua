@@ -520,7 +520,14 @@ function ExecucaoExercicio({
   };
 
   const salvar = () => {
-    salvarExercicioConcluido({ id: exercicio.id, nome: exercicio.nome });
+    const categoriaDoExercicio = CATEGORIAS.find((c) =>
+      c.exercicios.some((e) => e.id === exercicio.id),
+    );
+    salvarExercicioConcluido({
+      id: exercicio.id,
+      nome: exercicio.nome,
+      categoria: categoriaDoExercicio?.titulo,
+    });
     setSalvo(true);
   };
 

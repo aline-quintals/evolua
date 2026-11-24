@@ -114,13 +114,23 @@ export interface RegistroBemEstar {
   dataLocal: string;
 }
 
-/** Registro de questionário respondido. Não armazena as respostas pessoais. */
+/** Nível de atenção resumido de um questionário (não revela as respostas). */
+export type NivelAtencao = 'baixo' | 'moderado' | 'alto';
+
+/**
+ * Registro de questionário respondido.
+ * Não armazena as respostas pessoais: guarda só um resumo (resultado, nível de
+ * atenção e uma frase curta), suficiente para gráfico e relatório por período.
+ */
 export interface RegistroQuestionario {
   id: string;
   usuarioId: string;
   questionarioId: string;
   nome: string;
   categoria?: string;
+  resultado?: string;
+  nivelAtencao?: NivelAtencao;
+  resumo?: string;
   criadoEmISO: string;
   dataLocal: string;
 }
@@ -498,6 +508,9 @@ export function registrarQuestionarioRespondido(dados: {
   questionarioId: string;
   nome: string;
   categoria?: string;
+  resultado?: string;
+  nivelAtencao?: NivelAtencao;
+  resumo?: string;
 }): RegistroQuestionario {
   const agora = new Date();
 
@@ -507,6 +520,9 @@ export function registrarQuestionarioRespondido(dados: {
     questionarioId: dados.questionarioId,
     nome: dados.nome,
     categoria: dados.categoria,
+    resultado: dados.resultado,
+    nivelAtencao: dados.nivelAtencao,
+    resumo: dados.resumo,
     criadoEmISO: agora.toISOString(),
     dataLocal: dataLocalISO(agora),
   };
@@ -1359,10 +1375,10 @@ export type AtividadeHome = { chave: ChaveAtividade; titulo: string; fundo: stri
 
 // Tons pastel inspirados na paleta azul, verde e pêssego do aplicativo.
 export const ATIVIDADES_HOME: ReadonlyArray<AtividadeHome> = [
-  { chave: 'evolucaoPessoal', titulo: 'Evolução Pessoal', fundo: '#E1EFF9', texto: '#29465F', corIcone: '#2877AE', icone: 'trending-up' },
+  { chave: 'evolucaoPessoal', titulo: 'Evolução Pessoal', fundo: '#E5D9FF', texto: '#7055ad', corIcone: '#9872E8', icone: 'trending-up' },
   { chave: 'questionarios', titulo: 'Meus Questionários', fundo: '#DFF2EF', texto: '#294B49', corIcone: '#25877E', icone: 'clipboard' },
   { chave: 'metas', titulo: 'Minhas Metas', fundo: '#FCEBDD', texto: '#604936', corIcone: '#C47A3B', icone: 'flag' },
-  { chave: 'exercicios', titulo: 'Meus Exercícios', fundo: '#E8F1E5', texto: '#3D5140', corIcone: '#628A57', icone: 'fitness' },
+  { chave: 'exercicios', titulo: 'Meus Exercícios', fundo: '#D5E8FF', texto: '#305988', corIcone: '#5599E8', icone: 'fitness' },
 ];
 
 /** Cartão de atividade. PONTO DE INTEGRAÇÃO: o destino é definido em ROTAS_ATIVIDADES (seção 6). */

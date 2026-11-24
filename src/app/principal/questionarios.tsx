@@ -12,7 +12,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fontes } from '../../tema';
-import { MenuInferior, useLayoutInfo } from './compartilhado';
+import {
+  MenuInferior,
+  registrarQuestionarioRespondido,
+  useLayoutInfo,
+  type NivelAtencao,
+} from './compartilhado';
 
 /* =========================================================
    1. CORES (verde como tom principal + tons de apoio)
@@ -302,6 +307,47 @@ function gerarRelatorio(questionario: Questionario, respostas: string[]): Relato
 }
 
 /* =========================================================
+   4.1 RESUMO PARA O HISTÓRICO (sem guardar as respostas)
+========================================================= */
+
+// Perguntas cujas opções vão da mais tranquila para a que mais pede atenção.
+const PERGUNTAS_ORDENADAS: Record<string, number[]> = {
+  emocional: [0, 1, 2],
+  vontade: [0, 1, 2],
+  gatilhos: [1, 2],
+  motivacao: [0, 1, 2],
+};
+
+const RESUMOS_NIVEL: Record<NivelAtencao, string> = {
+  baixo: 'Sem sinais de atenção neste momento.',
+  moderado: 'Alguns pontos merecem observação.',
+  alto: 'Pontos importantes merecem atenção e apoio.',
+};
+
+function resumirQuestionario(
+  questionario: Questionario,
+  respostas: string[],
+): { nivelAtencao: NivelAtencao; resumo: string } {
+  const indices = PERGUNTAS_ORDENADAS[questionario.id] ?? questionario.perguntas.map((_, i) => i);
+
+  let soma = 0;
+  let contadas = 0;
+
+  indices.forEach((i) => {
+    const pergunta = questionario.perguntas[i];
+    const posicao = pergunta ? pergunta.opcoes.indexOf(respostas[i]) : -1;
+    if (!pergunta || posicao < 0 || pergunta.opcoes.length < 2) return;
+    soma += posicao / (pergunta.opcoes.length - 1);
+    contadas += 1;
+  });
+
+  const proporcao = contadas > 0 ? soma / contadas : 0;
+  const nivelAtencao: NivelAtencao = proporcao < 0.34 ? 'baixo' : proporcao < 0.67 ? 'moderado' : 'alto';
+
+  return { nivelAtencao, resumo: RESUMOS_NIVEL[nivelAtencao] };
+}
+
+/* =========================================================
    5. TELA
 ========================================================= */
 
@@ -367,6 +413,17 @@ function Questionarios() {
     if (indice < selecionado.perguntas.length - 1) {
       setIndice(indice + 1);
     } else {
+      const { nivelAtencao, resumo } = resumirQuestionario(selecionado, respostas);
+
+      registrarQuestionarioRespondido({
+        questionarioId: selecionado.id,
+        nome: selecionado.titulo,
+        categoria: selecionado.categoria,
+        resultado: gerarRelatorio(selecionado, respostas).titulo,
+        nivelAtencao,
+        resumo,
+      });
+
       setConcluido(true);
       setConcluidos((atual) =>
         atual.includes(selecionado.id) ? atual : [...atual, selecionado.id],

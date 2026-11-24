@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   BackHandler,
@@ -22,58 +22,31 @@ import {
   MenuInferior,
   NavegacaoContext,
   TelaInterna,
-  dataLocalISO,
   estilos,
-  gerarId,
   sairDaConta,
   useEvolua,
   useLayoutInfo,
   useNavegacao,
   useTecladoVisivel,
   registrarExercicioConcluido,
+  type RegistroExercicio,
 } from './compartilhado';
 import TelaConfiguracoes from './configuracoes';
 import TelaNotificacoes from './notificacoes';
 
-export interface ExercicioConcluido {
-  id: string;
-  exercicioId: string;
-  titulo: string;
-  concluidoEmISO: string;
-  dataLocal: string;
-}
+export type ExercicioConcluido = RegistroExercicio;
 
-let exerciciosConcluidos: ExercicioConcluido[] = [];
-const ouvintesConcluidos = new Set<() => void>();
-
-export function salvarExercicioConcluido(ex: { id: string; nome: string }): ExercicioConcluido {
-  const agora = new Date();
-
-  registrarExercicioConcluido({
+/** Salva o exercício concluído no estado central (useEvolua), sem lista paralela. */
+export function salvarExercicioConcluido(ex: { id: string; nome: string; categoria?: string }): RegistroExercicio {
+  return registrarExercicioConcluido({
     atividadeId: ex.id,
     nome: ex.nome,
+    categoria: ex.categoria ?? 'Exercício do dia',
   });
-
-  const registro: ExercicioConcluido = {
-    id: gerarId('exercicio'),
-    exercicioId: ex.id,
-    titulo: ex.nome,
-    concluidoEmISO: agora.toISOString(),
-    dataLocal: dataLocalISO(agora),
-  };
-
-  exerciciosConcluidos = [registro, ...exerciciosConcluidos];
-  ouvintesConcluidos.forEach((l) => l());
-
-  return registro;
 }
 
-export function useExerciciosConcluidos(): ExercicioConcluido[] {
-  const assinar = useCallback((l: () => void) => {
-    ouvintesConcluidos.add(l);
-    return () => { ouvintesConcluidos.delete(l); };
-  }, []);
-  return useSyncExternalStore(assinar, () => exerciciosConcluidos, () => exerciciosConcluidos);
+export function useExerciciosConcluidos(): RegistroExercicio[] {
+  return useEvolua((e) => e.exerciciosConcluidos);
 }
 
 type Fase = { texto: string; segundos: number; escala: number; dica?: string };
