@@ -19,7 +19,7 @@ db.iniciar()
 
 class Mensagem(BaseModel):
     texto: str
-    sessao:str ="padrao" 
+    sessao:str  
 
 
 @app.get("/")
@@ -38,6 +38,13 @@ def chat(msg: Mensagem):
     return {"resposta": resposta, "alerta": alerta}
 
 @app.get("/historico")
-def limpar_historico(sessao: str = "padrao"):
+def consultar_historico(sessao: str):
+    """Só consulta. Nunca altera nada."""
+    return db.listar(sessao)
+
+
+@app.delete("/historico")
+def apagar_historico(sessao: str):
+    """Só apaga o histórico da sessão informada."""
     db.apagar(sessao)
-    return {"status": "historico apagado"}
+    return {"status": "histórico apagado"}

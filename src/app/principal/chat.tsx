@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -11,8 +12,11 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../../config";
+import { apagarHistorico, consultarHistorico, enviarMensagem } from "../../api";
 
 type Msg = { id: string; autor: "bot" | "eu"; texto: string; alerta?: boolean };
+
+const SAUDACAO = "Olá! Como posso te ajudar hoje?";
 
 const RAPIDAS = [
   "Estou ansioso(a)",
@@ -23,12 +27,25 @@ const RAPIDAS = [
 ];
 
 async function obterSessao(): Promise<string> {
-  let id = await AsyncStorage.getItem("evolua_sessao");
-  if (!id) {
-    id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    await AsyncStorage.setItem("evolua_sessao", id);
+  const novo = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  try {
+    let id = await AsyncStorage.getItem("evolua_sessao");
+    if (!id) {
+      id = novo;
+      await AsyncStorage.setItem("evolua_sessao", id);
+    }
+    return id;
+  } catch {
+    return novo;
   }
-  return id;
+}
+
+function msgErro(e: unknown): Msg {
+  return {
+    id: `x${Date.now()}`,
+    autor: "bot",
+    texto: `Falha ao conectar em ${API_URL}\n${String(e)}`,
+  };
 }
 
 export default function Chat() {
@@ -43,17 +60,16 @@ export default function Chat() {
       const s = await obterSessao();
       setSessao(s);
       try {
-        const r = await fetch(`${API_URL}/historico?sessao=${encodeURIComponent(s)}`);
-        const itens = await r.json();
+        const itens = await consultarHistorico(s);
         if (itens.length > 0) {
           setMostrarRapidas(false);
-          setMsgs(itens.map((i: Omit<Msg, "id">, n: number) => ({ id: `h${n}`, ...i })));
+          setMsgs(itens.map((i, n) => ({ id: `h${n}`, ...i })));
           return;
         }
       } catch {
         // sem servidor: segue com a saudação
       }
-      setMsgs([{ id: "ola", autor: "bot", texto: "Olá! Como posso te ajudar hoje?" }]);
+      setMsgs([{ id: "ola", autor: "bot", texto: SAUDACAO }]);
     })();
   }, []);
 
@@ -66,27 +82,37 @@ export default function Chat() {
     setMsgs((m) => [...m, { id: `e${Date.now()}`, autor: "eu", texto: conteudo }]);
 
     try {
-      const r = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto: conteudo, sessao }),
-      });
-      if (!r.ok) throw new Error("erro");
-      const d = await r.json();
+      const d = await enviarMensagem(conteudo, sessao);
       setMsgs((m) => [
         ...m,
         { id: `b${Date.now()}`, autor: "bot", texto: d.resposta, alerta: d.alerta },
       ]);
-    } catch {
-      setMsgs((m) => [
-        ...m,
-        {
-          id: `x${Date.now()}`,
-          autor: "bot",
-          texto: "Não consegui me conectar ao servidor. Verifique se o backend está rodando.",
-        },
-      ]);
+    } catch (e) {
+      setMsgs((m) => [...m, msgErro(e)]);
     }
+  }
+
+  async function limpar() {
+    try {
+      await apagarHistorico(sessao);
+      setMsgs([{ id: "ola", autor: "bot", texto: SAUDACAO }]);
+      setMostrarRapidas(true);
+    } catch (e) {
+      setMsgs((m) => [...m, msgErro(e)]);
+    }
+  }
+
+  function confirmarLimpar() {
+    const aviso = "Isso apaga o histórico desta conversa. Deseja continuar?";
+    if (Platform.OS === "web") {
+      // Alert.alert não funciona no navegador
+      if (window.confirm(aviso)) limpar();
+      return;
+    }
+    Alert.alert("Limpar conversa", aviso, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Apagar", style: "destructive", onPress: limpar },
+    ]);
   }
 
   return (
@@ -95,8 +121,13 @@ export default function Chat() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={s.header}>
-        <Text style={s.titulo}>Conversar</Text>
-        <Text style={s.sub}>Assistente Evolua</Text>
+        <View>
+          <Text style={s.titulo}>Conversar</Text>
+          <Text style={s.sub}>Assistente Evolua</Text>
+        </View>
+        <Pressable style={s.limpar} onPress={confirmarLimpar}>
+          <Text style={s.limparTexto}>Limpar</Text>
+        </Pressable>
       </View>
 
       <FlatList
@@ -150,9 +181,20 @@ const ROXO = "#6a4fc7";
 
 const s = StyleSheet.create({
   tela: { flex: 1, backgroundColor: "#f4efff" },
-  header: { backgroundColor: ROXO, padding: 16, paddingTop: 48, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 },
+  header: {
+    backgroundColor: ROXO,
+    padding: 16,
+    paddingTop: 48,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
   titulo: { color: "#fff", fontSize: 18, fontWeight: "700" },
   sub: { color: "#fff", opacity: 0.9 },
+  limpar: { backgroundColor: "rgba(255,255,255,0.2)", paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999 },
+  limparTexto: { color: "#fff", fontSize: 13 },
   lista: { padding: 14, gap: 10 },
   balao: { maxWidth: "80%", padding: 12, borderRadius: 18 },
   bot: { backgroundColor: "#fff", alignSelf: "flex-start", borderBottomLeftRadius: 5 },
