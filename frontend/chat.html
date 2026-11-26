@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evolua – Conversar</title>
+  <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <button class="voltar" aria-label="Voltar">‹</button>
+      <div class="avatar">🤖</div>
+      <div class="titulo">
+        <b>Conversar</b>
+        <small><span class="online"></span> Assistente Evolua</small>
+      </div>
+      <span class="lua">🌙</span>
+    </header>
+
+    <div id="log"></div>
+
+    <div class="chips" id="chips"></div>
+
+    <div class="row">
+      <input id="input" placeholder="Digite sua mensagem…" autocomplete="off">
+      <button class="send" id="enviar" aria-label="Enviar">➤</button>
+    </div>
+    <div class="note">Este chat não substitui acompanhamento profissional.</div>
+  </div>
+
+  <script src="chat.js"></script>
+</body>
+</html>
