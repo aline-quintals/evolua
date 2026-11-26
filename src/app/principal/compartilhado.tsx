@@ -1416,7 +1416,7 @@ export function GradeAtividades() {
  * atividades e rola a lista ao ser tocado.
  */
 export function CarrosselAtividades() {
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
   const deslocamento = useRef(0);
   const [posicao, setPosicao] = useState<'inicio' | 'meio' | 'fim'>('inicio');
   const [larguraCont, setLarguraCont] = useState(0);

@@ -120,8 +120,6 @@ import {
   GradeAtividades,
   CarrosselAtividades,
   TelaHome,
-  CartaoAtividadePerfil,
-  TelaPerfil,
   estilos
 } from './compartilhado';
 

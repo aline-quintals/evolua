@@ -715,7 +715,7 @@ export default function Progresso() {
   const [tela, setTela] = useState<TelaAtual>('progresso');
   const [detalhe, setDetalhe] = useState<ChaveDetalhe | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>(30);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
 
   useEffect(() => {
     (navigation as any)?.setOptions?.({ tabBarStyle: { display: 'none' }, headerShown: false });

@@ -28,7 +28,7 @@ export default function Home() {
   const navigation = useNavigation();
   const tecladoVisivel = useTecladoVisivel();
   const [tela, setTela] = useState<TelaInterna>('home');
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
 
   // Esconde a barra padrão das Tabs: só vale o <MenuInferior /> deste arquivo (um único menu).
   useEffect(() => {

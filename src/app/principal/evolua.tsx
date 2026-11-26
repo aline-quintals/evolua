@@ -462,7 +462,7 @@ export default function Evolua() {
   const navigation = useNavigation();
   const tecladoVisivel = useTecladoVisivel();
   const [tela, setTela] = useState<TelaAtual>('evolua');
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
 
   useEffect(() => {
     (navigation as any)?.setOptions?.({ tabBarStyle: { display: 'none' }, headerShown: false });
