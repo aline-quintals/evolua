@@ -92,6 +92,7 @@ Recursos como teleatendimento e atendimento emergencial dependerão de implement
 | Rede de apoio | Informações sobre serviços de saúde e acolhimento |
 | Contatos de confiança | Cadastro opcional de contatos úteis |
 | Relatórios | Resumo de registros, metas e progresso |
+| Chat de apoio | Conversa de acolhimento, exercícios guiados e leitura das respostas em voz alta |
 
 As funcionalidades poderão ser ajustadas durante o desenvolvimento e os testes com usuários.
 
@@ -136,6 +137,108 @@ Antes da publicação de dados ou gráficos, devem ser registradas a fonte, publ
 - **Google Fonts**
 
 A arquitetura foi planejada para permitir cadastro, autenticação, registros emocionais, metas, quizzes, acompanhamento de progresso e armazenamento dos dados.
+
+### Chat de apoio (implementação atual)
+- **App:** React Native com Expo (Expo Router) e TypeScript, funcionando na web e no celular
+- **Servidor do chat:** Python com **FastAPI** e **Uvicorn** (pasta `backend`)
+- **Banco do chat:** **SQLite** (arquivo local `evolua.db`, criado automaticamente)
+- **Voz:** leitura das respostas com `expo-speech`
+
+---
+
+## ▶️ Como rodar o projeto
+
+O Evolua tem **duas partes que rodam ao mesmo tempo**: o **app** e o **servidor do chat**. Para o chat funcionar, o servidor precisa ficar ligado em um terminal enquanto o app está aberto.
+
+### 1. O que instalar antes
+
+| Programa | Para quê | Onde baixar |
+|---|---|---|
+| **Git** | Baixar o projeto | https://git-scm.com |
+| **Node.js** (versão LTS) | Rodar o app | https://nodejs.org |
+| **Python 3.10 ou superior** | Rodar o servidor do chat | https://python.org (na instalação, marque **"Add Python to PATH"**) |
+| **Visual Studio Code** | Editar e abrir os terminais (opcional) | https://code.visualstudio.com |
+| **Expo Go** (opcional) | Testar no celular | App Store ou Google Play |
+
+### 2. Baixar o projeto
+
+```bash
+git clone <link-do-repositório>
+cd evolua
+```
+
+### 3. Instalar as dependências do app
+
+Na pasta do projeto:
+
+```bash
+npm install
+```
+
+### 4. Instalar as dependências do servidor do chat
+
+```bash
+cd backend
+python -m pip install -r requirements.txt
+```
+
+Isso instala o **FastAPI** e o **Uvicorn**. O banco de dados do chat (`evolua.db`) é criado sozinho na primeira vez que o servidor liga.
+
+### 5. Ligar o servidor do chat (terminal 1)
+
+Dentro da pasta `backend`:
+
+```bash
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+- Deixe esse terminal **aberto**. Se ele for fechado, o chat para de funcionar.
+- Para conferir, abra `http://127.0.0.1:8000` no navegador. Deve aparecer `{"status":"Evolua no ar"}`.
+- Para **parar** o servidor, clique no terminal e aperte `Ctrl + C`.
+
+### 6. Ligar o app (terminal 2)
+
+Em **outro terminal**, na pasta do projeto:
+
+```bash
+npx expo start
+```
+
+- Aperte **w** para abrir no navegador; ou
+- Leia o **QR Code** com o app **Expo Go** no celular.
+
+### 7. Testar no celular
+
+1. O celular e o computador precisam estar **na mesma rede Wi-Fi**.
+2. Descubra o IP do computador: no Windows, rode `ipconfig` e copie o **Endereço IPv4** do Wi-Fi.
+3. No arquivo `src/config.ts`, atualize a linha:
+
+   ```ts
+   const IP_DO_PC = "SEU_IP_AQUI";
+   ```
+
+4. Se o celular não conectar, libere a porta 8000 no firewall do Windows (PowerShell **como administrador**):
+
+   ```powershell
+   netsh advfirewall firewall add rule name="Evolua 8000" dir=in action=allow protocol=TCP localport=8000
+   ```
+
+> O IP do computador pode mudar ao trocar de rede. Se o chat voltar a falhar no celular, confira o `ipconfig` de novo e atualize o `config.ts`.
+
+### Problemas comuns
+
+| Problema | O que fazer |
+|---|---|
+| `uvicorn` não é reconhecido | Use `python -m uvicorn ...` (com `python -m` na frente) |
+| `python` não é reconhecido | Reinstale o Python marcando **"Add Python to PATH"** ou use `py` no lugar de `python` |
+| Chat mostra "Falha ao conectar" | O servidor está desligado ou o IP no `config.ts` está errado |
+| Celular não conecta, mas o navegador do PC sim | Confira se estão no mesmo Wi-Fi, o IP no `config.ts` e o firewall (passo 7) |
+| `Unable to resolve module ...` | Instale o pacote que faltou com `npx expo install nome-do-pacote` |
+| O botão "Ouvir" não fala no iPhone | Baixe uma voz em português em **Ajustes > Acessibilidade > Conteúdo Falado > Vozes** |
+
+### Sobre o chat
+
+O chat de apoio é um **assistente baseado em regras**, e não uma inteligência artificial nem um profissional de saúde. Ele acolhe, faz perguntas, sugere exercícios simples (respiração, técnica 5-4-3-2-1 e relaxamento dos ombros) e **identifica mensagens de risco**, orientando a pessoa a procurar o **SAMU (192)** ou o **CVV (188)**. Ele **não substitui** acompanhamento profissional.
 
 ---
 

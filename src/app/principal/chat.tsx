@@ -17,6 +17,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Speech from 'expo-speech';
+import { setAudioModeAsync } from 'expo-audio';
 import { cores, fontes } from '../../tema';
 import { API_URL } from '../../config';
 import { apagarHistorico, consultarHistorico, enviarMensagem } from '../../api';
@@ -128,6 +130,48 @@ function TelaChat() {
   const [sessao, setSessao] = useState('');
   const [mostrarRapidas, setMostrarRapidas] = useState(true);
   const lista = useRef<FlatList<Msg>>(null);
+  const [falandoId, setFalandoId] = useState<string | null>(null);
+
+  // Para a leitura ao sair da tela
+  useEffect(() => () => { Speech.stop(); }, []);
+
+  async function ouvir(m: Msg) {
+    if (falandoId === m.id) {
+      Speech.stop();
+      setFalandoId(null);
+      return;
+    }
+    Speech.stop();
+    setFalandoId(m.id);
+    const terminou = () => setFalandoId((atual) => (atual === m.id ? null : atual));
+
+    // iPhone: garante que o som saia mesmo com o modo silencioso/sessão de áudio restrita
+    try {
+      await setAudioModeAsync({ playsInSilentMode: true });
+    } catch {
+      // segue sem ajustar
+    }
+
+    // Escolhe uma voz em português do Brasil (a melhor qualidade disponível)
+    let voz: string | undefined;
+    try {
+      const vozes = await Speech.getAvailableVoicesAsync();
+      const pt = vozes.filter((v) => v.language.replace('_', '-') === 'pt-BR');
+      const melhor = pt.find((v) => v.quality === Speech.VoiceQuality.Enhanced) ?? pt[0];
+      voz = melhor?.identifier;
+    } catch {
+      // usa a voz padrão
+    }
+
+    Speech.speak(m.texto, {
+      language: 'pt-BR',
+      voice: voz,
+      volume: 1.0,
+      onDone: terminou,
+      onStopped: terminou,
+      onError: terminou,
+    });
+  }
 
   useEffect(() => {
     (async () => {
@@ -151,6 +195,8 @@ function TelaChat() {
     const conteudo = (textoRapido ?? texto).trim();
     if (!conteudo || !sessao) return;
 
+    Speech.stop();
+    setFalandoId(null);
     setTexto('');
     setMostrarRapidas(false);
     setMsgs((m) => [...m, { id: `e${Date.now()}`, autor: 'eu', texto: conteudo }]);
@@ -167,6 +213,8 @@ function TelaChat() {
   }
 
   async function limpar() {
+    Speech.stop();
+    setFalandoId(null);
     try {
       await apagarHistorico(sessao);
       setMsgs([{ id: 'ola', autor: 'bot', texto: SAUDACAO }]);
@@ -214,6 +262,7 @@ function TelaChat() {
       <FlatList
         ref={lista}
         data={msgs}
+        extraData={falandoId}
         keyExtractor={(m) => m.id}
         style={{ flex: 1 }}
         contentContainerStyle={local.lista}
@@ -239,6 +288,23 @@ function TelaChat() {
             >
               {item.texto}
             </Text>
+            {item.autor === 'bot' && (
+              <Pressable
+                style={local.botaoOuvir}
+                onPress={() => ouvir(item)}
+                accessibilityRole="button"
+                accessibilityLabel={falandoId === item.id ? 'Parar leitura' : 'Ouvir mensagem'}
+              >
+                <Ionicons
+                  name={falandoId === item.id ? 'stop-circle-outline' : 'volume-high-outline'}
+                  size={16}
+                  color={item.alerta ? '#8C3A5C' : cores.azulEvolua}
+                />
+                <Text style={[local.ouvirTexto, item.alerta && { color: '#8C3A5C' }]}>
+                  {falandoId === item.id ? 'Parar' : 'Ouvir'}
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
       />
@@ -294,7 +360,7 @@ export default function Chat() {
   const navigation = useNavigation();
   const tecladoVisivel = useTecladoVisivel();
   const [tela, setTela] = useState<TelaAtual>('chat');
-  const scrollRef = useRef<any>(null);;
+  const scrollRef = useRef<any>(null);
 
   useEffect(() => {
     (navigation as any)?.setOptions?.({ tabBarStyle: { display: 'none' }, headerShown: false });
@@ -413,6 +479,16 @@ const local = StyleSheet.create({
     borderColor: cores.rosaVibrante,
   },
   textoBalao: { fontFamily: fontes.texto, fontSize: 15, lineHeight: 22, color: cores.azulMarinho },
+
+  botaoOuvir: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingVertical: 2,
+  },
+  ouvirTexto: { fontFamily: fontes.textoMedio, fontSize: 12, color: cores.azulEvolua },
 
   chipsLinha: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 10 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },

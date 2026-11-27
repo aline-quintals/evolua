@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 import db
-from bot import gerar_resposta, em_crise
+from bot import gerar_resposta, em_crise, resposta_de_seguranca
 
 app = FastAPI(title="Evolua - Chat")
 
@@ -29,8 +29,11 @@ def raiz():
 
 @app.post("/chat")
 def chat(msg: Mensagem):
-    alerta = em_crise(msg.texto)
-    resposta = gerar_resposta(msg.texto)
+    # O bot olha o que já foi conversado nesta sessão (últimas 40 mensagens)
+    historico = db.listar(msg.sessao)[-40:]
+
+    resposta = gerar_resposta(msg.texto, historico)
+    alerta = em_crise(msg.texto) or resposta_de_seguranca(resposta)
 
     db.salvar(msg.sessao, "eu", msg.texto)
     db.salvar(msg.sessao, "bot", resposta, alerta)
